@@ -1,437 +1,123 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>AR Place — วางรูปร่างบนพื้นจริง</title>
-  <meta name="theme-color" content="#0f172a"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shape Playground</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/examples/js/controls/OrbitControls.js"></script>
   <style>
-    :root{
-      --bg:#0f172a; --card:#0b1220; --accent:#06b6d4; --muted:#94a3b8; --glass: rgba(255,255,255,0.04);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    body {
+      margin: 0;
+      background: #111;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: #fff;
     }
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071029 0%, #071b2b 100%);color:#e6eef6}
-    #app{height:100%;position:relative;overflow:hidden}
-    canvas{display:block;width:100vw;height:100vh}
-    /* top bar */
-    .topbar{position:fixed;left:12px;right:12px;top:12px;display:flex;gap:12px;align-items:center;z-index:30}
-    .card{backdrop-filter: blur(6px);background:var(--glass);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    .brand{font-weight:700;font-size:15px;color:var(--accent);padding-right:8px}
-    .hint{color:var(--muted);font-size:13px}
-    /* controls panel */
-    .panel{position:fixed;right:12px;bottom:12px;z-index:30;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-    .panel .card{padding:12px;min-width:220px}
-    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-    select,input[type="range"], input[type="color"]{width:100%;margin-bottom:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);padding:8px;background:transparent;color:inherit}
-    .btn-row{display:flex;gap:8px;flex-wrap:wrap}
-    button{background:linear-gradient(180deg,var(--accent),#0891b2);color:#041024;border:none;padding:8px 10px;border-radius:10px;font-weight:600;cursor:pointer}
-    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:600}
-    /* reticle */
-    #reticleCanvas{position:fixed;left:0;top:0;pointer-events:none;z-index:25}
-    /* selection badge */
-    .badge{position:fixed;left:12px;bottom:12px;z-index:30;padding:10px;border-radius:12px;background:rgba(0,0,0,0.45);color:#fff;font-size:13px}
-    /* fallback hint */
-    .fallback{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:28;padding:14px;border-radius:12px;background:rgba(0,0,0,0.6);color:#fff;display:none}
-    @media (max-width:520px){
-      .panel .card{min-width:180px}
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.6);
+      padding: 12px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+    }
+    select, input {
+      margin-top: 6px;
+      width: 150px;
+      padding: 6px;
+      border-radius: 6px;
+      border: none;
     }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div class="topbar">
-      <div class="card" style="display:flex;align-items:center;gap:10px">
-        <div class="brand">AR Place</div>
-        <div class="hint">ส่องกล้องไปที่พื้นผิว → แตะเพื่อวาง</div>
-      </div>
-      <div id="arButtonHolder"></div>
-    </div>
+  <div id="ui">
+    <label>เลือกรูปทรง:</label><br>
+    <select id="shape">
+      <option value="box">Box</option>
+      <option value="sphere">Sphere</option>
+      <option value="cone">Cone</option>
+      <option value="cylinder">Cylinder</option>
+      <option value="torus">Torus</option>
+    </select><br>
 
-    <canvas id="reticleCanvas"></canvas>
-
-    <div class="panel">
-      <div class="card">
-        <label for="shape">รูปร่าง</label>
-        <select id="shape">
-          <option value="box">กล่อง (Box)</option>
-          <option value="sphere">ทรงกลม (Sphere)</option>
-          <option value="cone">กรวย (Cone)</option>
-          <option value="cylinder">ทรอน (Cylinder)</option>
-          <option value="torus">โดนัท (Torus)</option>
-        </select>
-
-        <label for="color">สี</label>
-        <input id="color" type="color" value="#2194ce">
-
-        <label for="scale">ขนาด {0.05 — 0.6}</label>
-        <input id="scale" type="range" min="0.05" max="0.6" step="0.01" value="0.14">
-
-        <label for="rotate">หมุน Y (องศา)</label>
-        <input id="rotate" type="range" min="0" max="360" step="1" value="0">
-
-        <div class="btn-row" style="margin-top:6px">
-          <button id="clearBtn" class="ghost">ลบทั้งหมด</button>
-          <button id="selectLast">เลือกล่าสุด</button>
-          <button id="deleteBtn" class="ghost">ลบที่เลือก</button>
-        </div>
-
-        <div style="margin-top:8px" class="btn-row">
-          <button id="saveBtn" class="ghost">บันทึก</button>
-          <button id="loadBtn" class="ghost">โหลด</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="selectedBadge" class="badge" style="display:none">ชิ้นงาน: <span id="selectedName"></span></div>
-    <div id="fallback" class="fallback">อุปกรณ์ไม่รองรับ AR Hit-Test — แสดงตัวอย่าง 3D แทน</div>
+    <label>ขนาด:</label><br>
+    <input type="range" id="size" min="0.5" max="3" value="1" step="0.1" />
   </div>
 
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
-    import { ARButton } from 'https://unpkg.com/three@0.152.2/examples/jsm/webxr/ARButton.js';
+  <script>
+    // Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
 
-    let camera, scene, renderer;
-    let controller;
-    let reticleMesh;
-    let hitTestSource = null;
-    let referenceSpace = null;
-    let shapes = [];
-    let selectedMesh = null;
+    // Camera
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(3, 3, 5);
 
-    const shapeEl = document.getElementById('shape');
-    const colorEl = document.getElementById('color');
-    const scaleEl = document.getElementById('scale');
-    const rotateEl = document.getElementById('rotate');
-    const clearBtn = document.getElementById('clearBtn');
-    const selectLastBtn = document.getElementById('selectLast');
-    const deleteBtn = document.getElementById('deleteBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const loadBtn = document.getElementById('loadBtn');
-    const selectedBadge = document.getElementById('selectedBadge');
-    const selectedName = document.getElementById('selectedName');
-    const fallbackBox = document.getElementById('fallback');
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-    init();
+    // Controls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    // Light
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set(5, 5, 5);
+    scene.add(light);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+
+    // Shape holder
+    let mesh;
+
+    function createShape(type, size) {
+      if (mesh) scene.remove(mesh);
+
+      let geometry;
+
+      switch (type) {
+        case "box": geometry = new THREE.BoxGeometry(size, size, size); break;
+        case "sphere": geometry = new THREE.SphereGeometry(size / 1.2, 32, 32); break;
+        case "cone": geometry = new THREE.ConeGeometry(size, size * 1.5, 32); break;
+        case "cylinder": geometry = new THREE.CylinderGeometry(size, size, size * 1.5, 32); break;
+        case "torus": geometry = new THREE.TorusGeometry(size, size / 4, 32, 100); break;
+      }
+
+      const material = new THREE.MeshStandardMaterial({ color: 0x44ccff, roughness: 0.3, metalness: 0.7 });
+      mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+    }
+
+    // Initial shape
+    createShape("box", 1);
+
+    // UI events
+    document.getElementById("shape").addEventListener("change", e => {
+      createShape(e.target.value, parseFloat(size.value));
+    });
+
+    document.getElementById("size").addEventListener("input", e => {
+      createShape(shape.value, parseFloat(e.target.value));
+    });
+
+    // Render loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
     animate();
 
-    function init(){
-      // Scene
-      scene = new THREE.Scene();
-
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 20);
-
-      const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-      scene.add(hemi);
-      const dir = new THREE.DirectionalLight(0xffffff, 0.6);
-      dir.position.set(0.5, 1, 0.5);
-      scene.add(dir);
-
-      // Renderer
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.outputEncoding = THREE.sRGBEncoding;
-      renderer.xr.enabled = true;
-      document.body.appendChild(renderer.domElement);
-
-      // Reticle (invisible mesh used to show hit-test position)
-      const ringGeo = new THREE.RingGeometry(0.06, 0.09, 32).rotateX(-Math.PI/2);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc });
-      reticleMesh = new THREE.Mesh(ringGeo, ringMat);
-      reticleMesh.visible = false;
-      reticleMesh.matrixAutoUpdate = false;
-      scene.add(reticleMesh);
-
-      // controller for select event
-      controller = renderer.xr.getController(0);
-      controller.addEventListener('select', onSelect);
-      scene.add(controller);
-
-      // ARButton
-      const arButton = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
-      document.getElementById('arButtonHolder').appendChild(arButton);
-
-      // handle session start to request hit-test source
-      renderer.xr.addEventListener('sessionstart', async () => {
-        const session = renderer.xr.getSession();
-        referenceSpace = await session.requestReferenceSpace('local');
-        const viewerSpace = await session.requestReferenceSpace('viewer');
-        hitTestSource = await session.requestHitTestSource({ space: viewerSpace });
-        session.addEventListener('end', () => {
-          hitTestSource = null;
-          referenceSpace = null;
-        });
-      });
-
-      // fallback UI if navigator.xr missing
-      if (!navigator.xr) {
-        fallbackBox.style.display = 'block';
-      }
-
-      // window resize
-      window.addEventListener('resize', onWindowResize);
-
-      // UI bindings
-      clearBtn.addEventListener('click', clearAll);
-      selectLastBtn.addEventListener('click', selectLast);
-      deleteBtn.addEventListener('click', deleteSelected);
-      saveBtn.addEventListener('click', saveScene);
-      loadBtn.addEventListener('click', loadScene);
-
-      // rotate slider live update when selecting a mesh
-      rotateEl.addEventListener('input', () => {
-        if(selectedMesh){
-          selectedMesh.rotation.y = THREE.MathUtils.degToRad(parseFloat(rotateEl.value));
-        }
-      });
-
-      // color change for selected
-      colorEl.addEventListener('input', () => {
-        if(selectedMesh){
-          selectedMesh.material.color.set(colorEl.value);
-        }
-      });
-
-      // scale change for selected
-      scaleEl.addEventListener('input', () => {
-        if(selectedMesh){
-          const s = parseFloat(scaleEl.value);
-          selectedMesh.scale.setScalar(s);
-        }
-      });
-
-      // Desktop/mobile fallback: click to add or select when not presenting AR
-      renderer.domElement.addEventListener('pointerdown', (ev) => {
-        if(renderer.xr.isPresenting) return; // ignore when AR active
-        onPointerDownFallback(ev);
-      }, false);
-    }
-
-    function createShapeMesh(type, color, scale){
-      let geo;
-      switch(type){
-        case 'box': geo = new THREE.BoxGeometry(1,1,1); break;
-        case 'sphere': geo = new THREE.SphereGeometry(0.5, 32, 32); break;
-        case 'cone': geo = new THREE.ConeGeometry(0.6, 1.2, 32); break;
-        case 'cylinder': geo = new THREE.CylinderGeometry(0.5,0.5,1.2,32); break;
-        case 'torus': geo = new THREE.TorusGeometry(0.5, 0.18, 16, 100); break;
-        default: geo = new THREE.BoxGeometry(1,1,1);
-      }
-      const mat = new THREE.MeshStandardMaterial({ color: color, metalness: 0.25, roughness: 0.5 });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.scale.setScalar(scale);
-      mesh.userData.placed = true;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      return mesh;
-    }
-
-    async function onSelect(){
-      // if an object is selected already -> move it to reticle position
-      if(reticleMesh.visible && referenceSpace){
-        if(selectedMesh){
-          // move selected to reticle
-          selectedMesh.position.setFromMatrixPosition(reticleMesh.matrix);
-          const q = new THREE.Quaternion();
-          reticleMesh.matrix.decompose(new THREE.Vector3(), q, new THREE.Vector3());
-          selectedMesh.quaternion.copy(q);
-          // apply current rotate/scale/color UI to selected
-          selectedMesh.rotation.y = THREE.MathUtils.degToRad(parseFloat(rotateEl.value));
-          selectedMesh.scale.setScalar(parseFloat(scaleEl.value));
-          selectedMesh.material.color.set(colorEl.value);
-          return;
-        }
-
-        // otherwise create a new shape at reticle
-        const type = shapeEl.value;
-        const color = colorEl.value;
-        const scale = parseFloat(scaleEl.value);
-        const mesh = createShapeMesh(type, color, scale);
-        mesh.position.setFromMatrixPosition(reticleMesh.matrix);
-        const q = new THREE.Quaternion();
-        reticleMesh.matrix.decompose(new THREE.Vector3(), q, new THREE.Vector3());
-        mesh.quaternion.copy(q);
-        mesh.rotation.y += THREE.MathUtils.degToRad(parseFloat(rotateEl.value));
-        scene.add(mesh);
-        shapes.push(mesh);
-        selectMesh(mesh);
-      }
-    }
-
-    function onPointerDownFallback(event){
-      // raycast into scene to select or add
-      const rect = renderer.domElement.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      const pointer = new THREE.Vector2(x,y);
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(pointer, camera);
-      const hits = raycaster.intersectObjects(shapes, true);
-      if(hits.length > 0){
-        selectMesh(hits[0].object);
-      } else {
-        // add new mesh in front of camera at 1.2m
-        const type = shapeEl.value, color = colorEl.value, scale=parseFloat(scaleEl.value);
-        const mesh = createShapeMesh(type, color, scale);
-        const dir = new THREE.Vector3();
-        camera.getWorldDirection(dir);
-        mesh.position.copy(camera.position).add(dir.multiplyScalar(1.2));
-        mesh.rotation.y = THREE.MathUtils.degToRad(parseFloat(rotateEl.value));
-        scene.add(mesh);
-        shapes.push(mesh);
-        selectMesh(mesh);
-      }
-    }
-
-    function selectMesh(mesh){
-      // clear previous highlight
-      if(selectedMesh){
-        selectedMesh.material.emissive && (selectedMesh.material.emissive.setHex(0x000000));
-      }
-      selectedMesh = mesh;
-      if(selectedMesh){
-        // highlight by small emissive
-        if(selectedMesh.material){
-          selectedMesh.material.emissive = selectedMesh.material.emissive || new THREE.Color(0x000000);
-          selectedMesh.material.emissive.setHex(0x113344);
-        }
-        selectedBadge.style.display = 'block';
-        selectedName.textContent = selectedMesh.uuid.slice(0,6);
-        // sync UI to selected mesh
-        colorEl.value = '#' + selectedMesh.material.color.getHexString();
-        scaleEl.value = selectedMesh.scale.x.toFixed(2);
-        rotateEl.value = Math.round(THREE.MathUtils.radToDeg(selectedMesh.rotation.y));
-      } else {
-        selectedBadge.style.display = 'none';
-      }
-    }
-
-    function selectLast(){
-      if(shapes.length>0) selectMesh(shapes[shapes.length-1]);
-    }
-
-    function deleteSelected(){
-      if(!selectedMesh) return;
-      scene.remove(selectedMesh);
-      const idx = shapes.indexOf(selectedMesh);
-      if(idx>=0) shapes.splice(idx,1);
-      selectedMesh = null;
-      selectedBadge.style.display = 'none';
-    }
-
-    function clearAll(){
-      for(const m of shapes) scene.remove(m);
-      shapes = [];
-      selectedMesh = null;
-      selectedBadge.style.display = 'none';
-    }
-
-    function saveScene(){
-      // store minimal data: type, color, position, quaternion, scale, rotationY
-      const data = shapes.map(m => ({
-        type: m.userData.type || inferTypeFromGeometry(m.geometry),
-        color: '#' + m.material.color.getHexString(),
-        position: { x: m.position.x, y: m.position.y, z: m.position.z },
-        quaternion: { x: m.quaternion.x, y: m.quaternion.y, z: m.quaternion.z, w: m.quaternion.w },
-        scale: m.scale.x,
-        rotationY: THREE.MathUtils.radToDeg(m.rotation.y)
-      }));
-      localStorage.setItem('arplace_scene', JSON.stringify(data));
-      alert('บันทึกฉากเรียบร้อย');
-    }
-
-    function loadScene(){
-      const raw = localStorage.getItem('arplace_scene');
-      if(!raw){ alert('ไม่พบฉากที่บันทึกไว้'); return; }
-      try{
-        const data = JSON.parse(raw);
-        clearAll();
-        for(const item of data){
-          const mesh = createShapeMesh(item.type || 'box', item.color || '#2194ce', item.scale || 0.14);
-          mesh.position.set(item.position.x, item.position.y, item.position.z);
-          mesh.quaternion.set(item.quaternion.x, item.quaternion.y, item.quaternion.z, item.quaternion.w);
-          mesh.rotation.y = THREE.MathUtils.degToRad(item.rotationY || 0);
-          scene.add(mesh);
-          shapes.push(mesh);
-        }
-        alert('โหลดฉากเรียบร้อย');
-      }catch(e){
-        alert('โหลดไม่สำเร็จ: ' + e.message);
-      }
-    }
-
-    function inferTypeFromGeometry(geo){
-      // naive: use type name
-      const name = geo.type || '';
-      if(name.includes('Box')) return 'box';
-      if(name.includes('Sphere')) return 'sphere';
-      if(name.includes('Cone')) return 'cone';
-      if(name.includes('Cylinder')) return 'cylinder';
-      if(name.includes('Torus')) return 'torus';
-      return 'box';
-    }
-
-    function onWindowResize(){
-      camera.aspect = window.innerWidth/window.innerHeight;
+    // Resize
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      // resize reticle canvas if present
-      resizeReticleCanvas();
-    }
-
-    // render loop
-    function animate(){
-      renderer.setAnimationLoop(render);
-    }
-
-    function render(timestamp, frame){
-      if(frame && hitTestSource && referenceSpace){
-        const hitTestResults = frame.getHitTestResults(hitTestSource);
-        if(hitTestResults.length > 0){
-          const hit = hitTestResults[0];
-          const pose = hit.getPose(referenceSpace);
-          reticleMesh.visible = true;
-          reticleMesh.matrix.fromArray(pose.transform.matrix);
-        } else {
-          reticleMesh.visible = false;
-        }
-      }
-      renderer.render(scene, camera);
-      drawReticleOverlay();
-    }
-
-    // simple overlay reticle (for UX polish) — draws a ring at center if reticle visible
-    const retCanvas = document.getElementById('reticleCanvas');
-    const ctx = retCanvas.getContext && retCanvas.getContext('2d');
-    function resizeReticleCanvas(){
-      retCanvas.width = window.innerWidth * devicePixelRatio;
-      retCanvas.height = window.innerHeight * devicePixelRatio;
-      retCanvas.style.width = window.innerWidth + 'px';
-      retCanvas.style.height = window.innerHeight + 'px';
-      if(ctx) ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-    }
-    resizeReticleCanvas();
-    window.addEventListener('resize', resizeReticleCanvas);
-
-    function drawReticleOverlay(){
-      if(!ctx) return;
-      ctx.clearRect(0,0,retCanvas.width,retCanvas.height);
-      if(reticleMesh.visible){
-        const x = window.innerWidth / 2;
-        const y = window.innerHeight / 2;
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(6,182,212,0.95)';
-        ctx.beginPath();
-        ctx.arc(x, y, 22, 0, Math.PI*2);
-        ctx.stroke();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'rgba(6,182,212,0.25)';
-        ctx.beginPath();
-        ctx.arc(x, y, 30, 0, Math.PI*2);
-        ctx.stroke();
-      }
-    }
-
+    });
   </script>
 </body>
 </html>
