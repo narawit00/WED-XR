@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>สำรวจร่างกายด้วยรูปทรงเรขาคณิต (XR)</title>
+  <style>
+    body { 
+      margin: 0; 
+      overflow: hidden; 
+      font-family: 'Sarabun', sans-serif; 
+      background: #0a0e17;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      text-align: center;
+      color: white;
+      background: rgba(0, 20, 40, 0.8);
+      padding: 10px;
+      font-size: 1.1rem;
+      border-bottom: 2px solid #4da6ff;
+      pointer-events: none;
+      text-shadow: 0 0 5px rgba(255,255,255,0.5);
+    }
+    .ar-button-container {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">คลิกที่รูปทรงเพื่อดูข้อมูลอวัยวะ</div>
+  <div class="ar-button-container"></div>
+
+  <script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.152.2';
+    import { ARButton } from 'https://cdn.skypack.dev/three@0.152.2/examples/jsm/webxr/ARButton.js';
+
+    // สร้าง Scene
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+    camera.position.set(0, 0, 5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    // แสงสว่าง
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0x4da6ff, 0.8);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    // กำหนดรูปทรงอวัยวะ
+    const organs = [
+      { 
+        name: "หัวใจ", 
+        type: 'cone', 
+        color: 0xff4d4d, 
+        pos: [0, 0.8, 0], 
+        radius: 0.3, 
+        height: 0.6, 
+        info: "อวัยวะกล้ามเนื้อที่สูบฉีดเลือดไปทั่วร่างกาย" 
+      },
+      { 
+        name: "สมอง", 
+        type: 'sphere', 
+        color: 0x6699ff, 
+        pos: [0, 2.2, 0], 
+        radius: 0.45, 
+        info: "ศูนย์กลางควบคุมระบบประสาทและการคิด" 
+      },
+      { 
+        name: "ปอดซ้าย", 
+        type: 'cylinder', 
+        color: 0x80d4ff, 
+        pos: [-0.8, 1.2, 0.3], 
+        radius: 0.25, 
+        height: 0.9, 
+        info: "ส่วนซ้ายของการแลกเปลี่ยนออกซิเจนในร่างกาย" 
+      },
+      { 
+        name: "ปอดขวา", 
+        type: 'cylinder', 
+        color: 0x80d4ff, 
+        pos: [0.8, 1.2, 0.3], 
+        radius: 0.25, 
+        height: 0.9, 
+        info: "ส่วนขวาของการแลกเปลี่ยนออกซิเจนในร่างกาย" 
+      },
+      { 
+        name: "กระเพาะอาหาร", 
+        type: 'sphere', 
+        color: 0xffcc66, 
+        pos: [0, -0.6, 0], 
+        radius: 0.4, 
+        info: "อวัยวะย่อยอาหารด้วยกรดและเอนไซม์" 
+      },
+      { 
+        name: "ตับ", 
+        type: 'dodecahedron', 
+        color: 0xff9966, 
+        pos: [0.9, 0.2, -0.2], 
+        radius: 0.35, 
+        info: "กรองสารพิษและผลิตน้ำดีสำหรับการย่อย" 
+      }
+    ];
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const organObjects = [];
+
+    // สร้างรูปทรงแต่ละอวัยวะ
+    organs.forEach(org => {
+      let geometry;
+      
+      switch(org.type) {
+        case 'cone':
+          geometry = new THREE.ConeGeometry(org.radius, org.height, 16);
+          break;
+        case 'sphere':
+          geometry = new THREE.SphereGeometry(org.radius, 24, 24);
+          break;
+        case 'cylinder':
+          geometry = new THREE.CylinderGeometry(org.radius, org.radius, org.height, 16);
+          break;
+        case 'dodecahedron':
+          geometry = new THREE.DodecahedronGeometry(org.radius, 0);
+          break;
+      }
+
+      const material = new THREE.MeshPhongMaterial({ 
+        color: org.color,
+        shininess: 80,
+        specular: 0x111111
+      });
+      
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(...org.pos);
+      
+      // ปรับทิศทางรูปทรงพิเศษ
+      if (org.type === 'cone') {
+        mesh.rotation.x = Math.PI; // หันฐานหัวใจลง
+      }
+      if (org.type === 'cylinder') {
+        mesh.rotation.z = Math.PI/6; // เอียงปอดให้ดูเป็นธรรมชาติ
+      }
+
+      mesh.userData = { name: org.name, info: org.info };
+      scene.add(mesh);
+      organObjects.push(mesh);
+    });
+
+    // จัดการการคลิก
+    const infoDiv = document.getElementById('info');
+    renderer.domElement.addEventListener('click', (event) => {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(organObjects);
+
+      if (intersects.length > 0) {
+        const obj = intersects[0].object;
+        infoDiv.innerHTML = `<strong>${obj.userData.name}</strong>: ${obj.userData.info}`;
+      } else {
+        infoDiv.textContent = "คลิกที่รูปทรงเพื่อดูข้อมูลอวัยวะ";
+      }
+    });
+
+    // เพิ่มปุ่ม AR (แบบถูกต้องตามมาตรฐาน WebXR)
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ['hit-test', 'dom-overlay'],
+      optionalFeatures: ['anchors'],
+      domOverlay: { root: document.body }
+    });
+    arButton.style.padding = '14px 28px';
+    arButton.style.fontSize = '1.1rem';
+    arButton.style.background = '#4da6ff';
+    arButton.style.border = 'none';
+    arButton.style.borderRadius = '12px';
+    arButton.style.color = 'white';
+    arButton.style.cursor = 'pointer';
+    arButton.style.boxShadow = '0 4px 15px rgba(77, 166, 255, 0.4)';
+    document.querySelector('.ar-button-container').appendChild(arButton);
+
+    // Animation Loop
+    renderer.setAnimationLoop(() => {
+      // หมุนรูปทรงเล็กน้อยเพื่อความน่าสนใจ
+      organObjects.forEach((obj, index) => {
+        obj.rotation.y += 0.005 * (index + 1);
+      });
+      renderer.render(scene, camera);
+    });
+
+    // ปรับขนาดเมื่อหน้าจอเปลี่ยน
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
