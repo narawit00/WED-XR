@@ -3,170 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paper Planes XR World</title>
+    <title>หัวใจมนุษย์ใน AR - XR Technology</title>
+    
+    <!-- A-Frame Core -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    
+    <!-- A-Frame AR.js for Mobile AR -->
+    <script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
+    
+    <!-- A-Frame Animation -->
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    
     <style>
-        body { margin: 0; background-color: #6a8dff; overflow: hidden; }
-        /* จัดหน้าจอ info */
-        #info {
+        body {
+            margin: 0;
+            font-family: 'Sarabun', 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+        
+        #info-panel {
             position: absolute;
             top: 10px;
-            width: 100%;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 300px;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        #info-panel h2 {
+            margin: 0 0 10px 0;
+            color: #d32f2f;
+            font-size: 20px;
             text-align: center;
+        }
+        
+        #info-panel p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #d32f2f;
             color: white;
-            font-family: sans-serif;
-            pointer-events: none;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+        
+        .btn:hover {
+            background: #b71c1c;
+            transform: scale(1.05);
+        }
+        
+        .btn.active {
+            background: #388e3c;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
             z-index: 100;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .arjs-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .arjs-loader div {
+            text-align: center;
+            font-size: 1.25em;
+            color: #d32f2f;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-
-    <div id="info">
-        <h3>Paper Planes XR Demo</h3>
-        <p>กดปุ่มด้านล่างเพื่อเข้าสู่โลก XR / VR</p>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="arjs-loader">
+            <div>กำลังโหลด AR...</div>
+            <br>
+            <div style="font-size: 16px; color: #666;">เล็งกล้องไปที่พื้นผิวเพื่อแสดงหัวใจ</div>
+        </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- Info Panel -->
+    <div id="info-panel">
+        <h2>❤️ หัวใจมนุษย์ใน AR</h2>
+        <p><strong>คำแนะนำ:</strong></p>
+        <p>• เล็งกล้องไปที่พื้นผิว</p>
+        <p>• แตะที่หัวใจเพื่อดูรายละเอียด</p>
+        <p>• ใช้ปุ่มด้านล่างควบคุม</p>
+        <p><strong>ส่วนหัวใจ:</strong></p>
+        <p id="part-info">กดที่ส่วนต่างๆ ของหัวใจ</p>
+    </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { VRButton } from 'three/addons/webxr/VRButton.js'; // ใช้ VRButton เพื่อเข้าโหมด XR (Immersive)
+    <!-- Control Panel -->
+    <div class="controls">
+        <button class="btn active" id="toggleBeat">หัวใจเต้น: ON</button>
+        <button class="btn active" id="toggleRotate">หมุนอัตโนมัติ: ON</button>
+        <button class="btn" id="toggleParts">แสดงส่วนประกอบ</button>
+        <button class="btn" id="resetView">รีเซ็ตมุมมอง</button>
+    </div>
 
-        let camera, scene, renderer;
-        let earth, planes = [];
-
-        init();
-        animate();
-
-        function init() {
-            // 1. สร้าง Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); // สีฟ้าท้องฟ้าแบบในคลิป
-            // เพิ่มหมอกจางๆ เพื่อความสวยงาม
-            scene.fog = new THREE.Fog(0x87CEEB, 1, 15);
-
-            // 2. ตั้งกล้อง
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, 1.6, 3); // สูง 1.6 เมตร (ระดับสายตาคนยืนใน VR)
-
-            // 3. สร้างแสง (Lighting)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-            dirLight.position.set(5, 10, 7);
-            scene.add(dirLight);
-
-            // 4. สร้างโลก (Earth) แบบ Low Poly
-            // IcosahedronGeometry เหมาะกับการทำทรงกลมเหลี่ยมๆ
-            const earthGeometry = new THREE.IcosahedronGeometry(0.8, 1); 
-            const earthMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x2E8B57, // สีเขียว
-                flatShading: true, // *สำคัญ* ทำให้เห็นเป็นเหลี่ยมๆ แบบในคลิป
-                shininess: 0
-            });
-            earth = new THREE.Mesh(earthGeometry, earthMaterial);
-            earth.position.set(0, 1.3, -1); // ดันไปข้างหน้าหน่อย
-            scene.add(earth);
-
-            // ส่วนที่เป็นน้ำ (Sphere ซ้อนข้างในสีฟ้า)
-            const waterGeometry = new THREE.IcosahedronGeometry(0.75, 1);
-            const waterMaterial = new THREE.MeshPhongMaterial({
-                color: 0x4682B4,
-                flatShading: true
-            });
-            const water = new THREE.Mesh(waterGeometry, waterMaterial);
-            earth.add(water); // ให้เป็นลูกของโลก
-
-            // 5. สร้างเครื่องบินกระดาษ (Paper Planes)
-            for (let i = 0; i < 15; i++) {
-                createPlane();
-            }
-
-            // 6. ตั้งค่า Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
+    <!-- AR Scene -->
+    <a-scene 
+        embedded 
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix"
+        vr-mode-ui="enabled: false"
+        renderer="antialias: true; alpha: true"
+        gesture-detector
+        id="scene">
+        
+        <!-- AR Camera -->
+        <a-camera id="camera" position="0 1.6 0" look-controls wasd-controls-enabled="false"></a-camera>
+        
+        <!-- Heart Container - This will be positioned by AR.js -->
+        <a-entity id="heart-container" position="0 0 -3" visible="false">
             
-            // *** เปิดใช้งาน XR ***
-            renderer.xr.enabled = true; 
-            document.body.appendChild(renderer.domElement);
-
-            // เพิ่มปุ่มกดเข้า XR (VR) ที่ด้านล่างจอ
-            document.body.appendChild(VRButton.createButton(renderer));
-
-            // Controls สำหรับตอนดูบนหน้าจอคอมปกติ (หมุนเมาส์ได้)
-            const controls = new OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 1.3, -1);
-            controls.update();
-
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function createPlane() {
-            // สร้างรูปทรงสามเหลี่ยมง่ายๆ เป็นเครื่องบิน
-            const geometry = new THREE.ConeGeometry(0.02, 0.1, 3); // ทรงกรวย 3 เหลี่ยม
-            const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            const plane = new THREE.Mesh(geometry, material);
-
-            // สร้าง Object ว่างๆ ไว้เป็นจุดศูนย์กลางการหมุน (Pivot)
-            const pivot = new THREE.Object3D();
-            pivot.position.copy(earth.position); // อยู่ที่เดียวกับโลก
+            <!-- Heart Model -->
+            <a-entity id="human-heart" geometry="primitive: sphere; radius: 1.2" 
+                      material="color: #d32f2f; opacity: 0.9; transparent: true"
+                      class="heart-model"
+                      animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear"
+                      animation__pulse="property: scale; from: 1 1 1; to: 1.05 1.05 1.05; dir: alternate; loop: true; dur: 800; easing: easeInOutSine"
+                      gesture-handler="scale: true; rotation: true"
+                      raycaster="objects: .clickable"
+                      cursor="rayOrigin: mouse">
+                
+                <!-- Right Atrium -->
+                <a-sphere id="right-atrium" position="0.5 0.3 0" radius="0.4" 
+                          material="color: #ff6b6b; opacity: 0.8; transparent: true"
+                          class="clickable heart-part"
+                          data-info="หัวใจห้องบน (Right Atrium) - รับเลือดจากร่างกาย">
+                    <a-animation attribute="material.color" from="#ff6b6b" to="#ff5252" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
+                </a-sphere>
+                
+                <!-- Left Atrium -->
+                <a-sphere id="left-atrium" position="-0.5 0.3 0" radius="0.4" 
+                          material="color: #ff8a80; opacity: 0.8; transparent: true"
+                          class="clickable heart-part"
+                          data-info="หัวใจห้องบน (Left Atrium) - รับเลือดจากปอด">
+                    <a-animation attribute="material.color" from="#ff8a80" to="#ff6b6b" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
+                </a-sphere>
+                
+                <!-- Right Ventricle -->
+                <a-sphere id="right-ventricle" position="0.4 -0.3 0" radius="0.5" 
+                          material="color: #f44336; opacity: 0.8; transparent: true"
+                          class="clickable heart-part"
+                          data-info="หัวใจห้องล่าง (Right Ventricle) - สูบฉีดเลือดไปปอด">
+                    <a-animation attribute="material.color" from="#f44336" to="#d32f2f" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
+                </a-sphere>
+                
+                <!-- Left Ventricle -->
+                <a-sphere id="left-ventricle" position="-0.4 -0.3 0" radius="0.5" 
+                          material="color: #e53935; opacity: 0.8; transparent: true"
+                          class="clickable heart-part"
+                          data-info="หัวใจห้องล่าง (Left Ventricle) - สูบฉีดเลือดไปร่างกาย">
+                    <a-animation attribute="material.color" from="#e53935" to="#c62828" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
+                </a-sphere>
+                
+                <!-- Aorta -->
+                <a-cylinder id="aorta" position="-0.2 0.9 0" radius="0.15" height="0.8" 
+                           material="color: #8b0000; opacity: 0.9"
+                           class="clickable heart-part"
+                           data-info="ออร์ตา (Aorta) - หลอดเลือดใหญ่ส่งเลือดไปร่างกาย">
+                </a-cylinder>
+                
+                <!-- Pulmonary Artery -->
+                <a-cylinder id="pulmonary" position="0.2 0.9 0" radius="0.12" height="0.7" 
+                           material="color: #b71c1c; opacity: 0.9"
+                           class="clickable heart-part"
+                           data-info="หลอดเลือดปอด - ส่งเลือดไปปอด">
+                </a-cylinder>
+                
+                <!-- Vena Cava -->
+                <a-cylinder id="vena-cava" position="0.5 0.8 0" radius="0.1" height="0.6" 
+                           material="color: #ff8a65; opacity: 0.9"
+                           class="clickable heart-part"
+                           data-info="เวนาคาเวา - รับเลือดจากร่างกาย">
+                </a-cylinder>
+                
+                <!-- Labels -->
+                <a-text value="RA" position="0.5 0.3 0.5" align="center" 
+                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+                        class="label"></a-text>
+                <a-text value="LA" position="-0.5 0.3 0.5" align="center" 
+                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+                        class="label"></a-text>
+                <a-text value="RV" position="0.4 -0.3 0.6" align="center" 
+                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+                        class="label"></a-text>
+                <a-text value="LV" position="-0.4 -0.3 0.6" align="center" 
+                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
+                        class="label"></a-text>
+                
+            </a-entity>
             
-            // สุ่มตำแหน่งและการหมุน
-            pivot.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                0
-            );
+            <!-- Information Display -->
+            <a-plane id="info-display" position="0 -2.5 0" width="4" height="0.8" 
+                     material="color: #333; opacity: 0.8; transparent: true"
+                     visible="false">
+                <a-text id="info-text" value="" position="0 0 0.01" align="center" 
+                        color="white" width="12" shader="msdf" 
+                        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
+            </a-plane>
+            
+        </a-entity>
+        
+        <!-- Lighting -->
+        <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
+        <a-light type="directional" position="2 4 2" color="#ffffff" intensity="0.8" castShadow="true"></a-light>
+        <a-light type="point" position="0 2 0" color="#ffebee" intensity="0.3"></a-light>
+        
+        <!-- Sky -->
+        <a-sky color="#1a1a2e"></a-sky>
+        
+    </a-scene>
 
-            // ขยับเครื่องบินออกห่างจากจุดศูนย์กลาง
-            plane.position.set(0, 0.9 + Math.random() * 0.3, 0); 
-            plane.rotation.x = Math.PI / 2; // หันหัวบิน
+    <script>
+        // Hide loading screen when scene is loaded
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('heart-container').setAttribute('visible', true);
+            }, 2000);
+        });
 
-            pivot.add(plane);
-            scene.add(pivot);
+        // Control variables
+        let isBeating = true;
+        let isRotating = true;
+        let showParts = true;
 
-            // เก็บข้อมูลไว้สำหรับการ Animate
-            planes.push({
-                mesh: pivot,
-                speed: 0.005 + Math.random() * 0.01
-            });
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // ฟังก์ชัน Render Loop (สำคัญสำหรับ WebXR ต้องใช้ setAnimationLoop)
-        function animate() {
-            renderer.setAnimationLoop(render);
-        }
-
-        function render() {
-            // หมุนโลกช้าๆ
-            if (earth) {
-                earth.rotation.y += 0.002;
+        // Toggle heartbeat animation
+        document.getElementById('toggleBeat').addEventListener('click', function() {
+            const heart = document.getElementById('human-heart');
+            const parts = document.querySelectorAll('.heart-part');
+            isBeating = !isBeating;
+            this.classList.toggle('active');
+            this.textContent = `หัวใจเต้น: ${isBeating ? 'ON' : 'OFF'}`;
+            
+            if (isBeating) {
+                heart.setAttribute('animation__pulse', 'property: scale; from: 1 1 1; to: 1.05 1.05 1.05; dir: alternate; loop: true; dur: 800; easing: easeInOutSine');
+                parts.forEach(part => {
+                    const anim = part.querySelector('a-animation');
+                    if (anim) anim.play();
+                });
+            } else {
+                heart.removeAttribute('animation__pulse');
+                parts.forEach(part => {
+                    const anim = part.querySelector('a-animation');
+                    if (anim) anim.stop();
+                });
             }
+        });
 
-            // บินเครื่องบินรอบโลก
-            planes.forEach(p => {
-                p.mesh.rotation.z += p.speed; // หมุน Pivot
-                p.mesh.rotation.x += p.speed * 0.5;
+        // Toggle rotation
+        document.getElementById('toggleRotate').addEventListener('click', function() {
+            const heart = document.getElementById('human-heart');
+            isRotating = !isRotating;
+            this.classList.toggle('active');
+            this.textContentContent = `หมุนอัตโนมัติ: ${isRotating ? 'ON' : 'OFF'}`;
+            
+            if (isRotating) {
+                heart.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear');
+            } else {
+                heart.removeAttribute('animation');
+            }
+        });
+
+        // Toggle parts visibility
+        document.getElementById('toggleParts').addEventListener('click', function() {
+            const parts = document.querySelectorAll('.heart-part, .label');
+            showParts = !showParts;
+            this.classList.toggle('active');
+            this.textContent = showParts ? 'ซ่อนส่วนประกอบ' : 'แสดงส่วนประกอบ';
+            
+            parts.forEach(part => {
+                part.setAttribute('visible', showParts);
             });
+        });
 
-            renderer.render(scene, camera);
-        }
+        // Reset view
+        document.getElementById('resetView').addEventListener('click', function() {
+            const heart = document.getElementById('human-heart');
+            heart.setAttribute('position', '0 0 0');
+            heart.setAttribute('rotation', '0 0 0');
+            heart.setAttribute('scale', '1 1 1');
+            document.getElementById('info-display').setAttribute('visible', false);
+        });
+
+        // Click interaction for heart parts
+        document.querySelectorAll('.heart-part').forEach(part => {
+            part.addEventListener('click', function() {
+                const info = this.getAttribute('data-info');
+                const infoDisplay = document.getElementById('info-display');
+                const infoText = document.getElementById('info-text');
+                
+                infoText.setAttribute('value', info);
+                infoDisplay.setAttribute('visible', true);
+                
+                // Highlight clicked part
+                const originalColor = this.getAttribute('material').color;
+                this.setAttribute('material', 'color', '#ffff00');
+                
+                setTimeout(() => {
+                    this.setAttribute('material', 'color', originalColor);
+                }, 1000);
+                
+                // Update info panel
+                document.getElementById('part-info').textContent = info;
+            });
+        });
+
+        // Touch gestures for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        document.addEventListener('touchstart', function(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchmove', function(e) {
+            if (!e.target.classList.contains('btn')) {
+                e.preventDefault();
+            }
+        });
+        
+        // AR.js event listeners
+        window.addEventListener('arjs-nft-loaded', function() {
+            console.log('AR marker detected');
+        });
+        
+        // Handle AR tracking lost/found
+        document.querySelector('a-scene').addEventListener('markerLost', function() {
+            document.getElementById('info-panel').style.display = 'none';
+        });
+        
+        document.querySelector('a-scene').addEventListener('markerFound', function() {
+            document.getElementById('info-panel').style.display = 'block';
+        });
     </script>
 </body>
 </html>
