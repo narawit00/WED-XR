@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>หัวใจมนุษย์ใน AR - XR Technology</title>
+    <title>3D Human Heart Interactive Viewer</title>
     
     <!-- A-Frame Core -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     
-    <!-- A-Frame AR.js for Mobile AR -->
-    <script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
-    
-    <!-- A-Frame Animation -->
+    <!-- A-Frame Extras for Orbit Controls -->
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     
     <style>
@@ -19,33 +16,45 @@
             margin: 0;
             font-family: 'Sarabun', 'Segoe UI', sans-serif;
             overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
         }
         
         #info-panel {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 20px;
+            left: 20px;
             background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
+            padding: 20px;
             border-radius: 15px;
-            max-width: 300px;
-            z-index: 10;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
+            max-width: 350px;
+            z-index: 1000;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         #info-panel h2 {
-            margin: 0 0 10px 0;
+            margin: 0 0 15px 0;
             color: #d32f2f;
-            font-size: 20px;
+            font-size: 24px;
             text-align: center;
+            font-weight: bold;
         }
         
         #info-panel p {
-            margin: 5px 0;
-            font-size: 14px;
+            margin: 8px 0;
+            font-size: 15px;
             color: #333;
-            line-height: 1.5;
+            line-height: 1.6;
+        }
+        
+        #part-info {
+            font-weight: bold;
+            color: #d32f2f;
+            padding: 10px;
+            background: rgba(211, 47, 47, 0.1);
+            border-radius: 8px;
+            margin-top: 10px;
         }
         
         .controls {
@@ -54,19 +63,20 @@
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
+            padding: 15px 20px;
             border-radius: 20px;
             display: flex;
-            gap: 10px;
-            z-index: 10;
+            gap: 12px;
+            z-index: 1000;
             flex-wrap: wrap;
             justify-content: center;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             background: #d32f2f;
             color: white;
             border: none;
@@ -76,15 +86,24 @@
             font-weight: bold;
             transition: all 0.3s;
             touch-action: manipulation;
+            user-select: none;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
         }
         
         .btn:hover {
             background: #b71c1c;
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4);
         }
         
         .btn.active {
             background: #388e3c;
+            box-shadow: 0 4px 15px rgba(56, 142, 60, 0.3);
+        }
+        
+        .btn.active:hover {
+            background: #2e7d32;
+            box-shadow: 0 6px 20px rgba(56, 142, 60, 0.4);
         }
         
         #loading {
@@ -93,200 +112,248 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: white;
-            font-size: 24px;
-            z-index: 100;
-            text-align: center;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-
-        .arjs-loader {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            font-size: 28px;
             z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            font-weight: bold;
         }
 
-        .arjs-loader div {
-            text-align: center;
-            font-size: 1.25em;
-            color: #d32f2f;
-            font-weight: bold;
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #d32f2f;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #controls-hint {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 1000;
+            max-width: 250px;
         }
     </style>
 </head>
 <body>
     <!-- Loading Screen -->
     <div id="loading">
-        <div class="arjs-loader">
-            <div>กำลังโหลด AR...</div>
-            <br>
-            <div style="font-size: 16px; color: #666;">เล็งกล้องไปที่พื้นผิวเพื่อแสดงหัวใจ</div>
-        </div>
+        <div class="spinner"></div>
+        กำลังโหลดหัวใจ 3D...
     </div>
 
     <!-- Info Panel -->
     <div id="info-panel">
-        <h2>❤️ หัวใจมนุษย์ใน AR</h2>
-        <p><strong>คำแนะนำ:</strong></p>
-        <p>• เล็งกล้องไปที่พื้นผิว</p>
-        <p>• แตะที่หัวใจเพื่อดูรายละเอียด</p>
-        <p>• ใช้ปุ่มด้านล่างควบคุม</p>
-        <p><strong>ส่วนหัวใจ:</strong></p>
-        <p id="part-info">กดที่ส่วนต่างๆ ของหัวใจ</p>
+        <h2>❤️ หัวใจมนุษย์ 3D Interactive</h2>
+        <p><strong>🎮 วิธีใช้งาน:</strong></p>
+        <p>• 🖱️ คลิก+ลากเพื่อหมุนหัวใจ</p>
+        <p>• 📱 แตะ+ลากบนหน้าจอ (มือถือ)</p>
+        <p>• 🔍 เลื่อน Wheel/Pinch เพื่อซูม</p>
+        <p>• 👆 คลิกที่ส่วนต่างๆ ของหัวใจ</p>
+        <p><strong>📋 ข้อมูลส่วนหัวใจ:</strong></p>
+        <p id="part-info">คลิกที่ส่วนต่างๆ เพื่อดูรายละเอียด</p>
+    </div>
+
+    <!-- Controls Hint -->
+    <div id="controls-hint">
+        <strong>⌨️ คีย์ลัด:</strong><br>
+        Space: หยุด/เล่น การเต้น<br>
+        R: รีเซ็ตมุมมอง<br>
+        H: ซ่อน/แสดง แผงควบคุม
     </div>
 
     <!-- Control Panel -->
-    <div class="controls">
-        <button class="btn active" id="toggleBeat">หัวใจเต้น: ON</button>
-        <button class="btn active" id="toggleRotate">หมุนอัตโนมัติ: ON</button>
-        <button class="btn" id="toggleParts">แสดงส่วนประกอบ</button>
-        <button class="btn" id="resetView">รีเซ็ตมุมมอง</button>
+    <div class="controls" id="control-panel">
+        <button class="btn active" id="toggleBeat">💓 เต้น: ON</button>
+        <button class="btn active" id="toggleRotate">🔄 หมุนอัตโนมัติ: ON</button>
+        <button class="btn" id="toggleParts">👁️ ส่วนประกอบ</button>
+        <button class="btn" id="resetView">🏠 รีเซ็ต</button>
+        <button class="btn" id="toggleWireframe">🔧 Wireframe</button>
     </div>
 
-    <!-- AR Scene -->
+    <!-- 3D Scene -->
     <a-scene 
         embedded 
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix"
-        vr-mode-ui="enabled: false"
-        renderer="antialias: true; alpha: true"
-        gesture-detector
-        id="scene">
+        background="color: #1a1a2e"
+        renderer="antialias: true; alpha: true; colorManagement: true"
+        cursor="rayOrigin: mouse"
+        raycaster="objects: .clickable">
         
-        <!-- AR Camera -->
-        <a-camera id="camera" position="0 1.6 0" look-controls wasd-controls-enabled="false"></a-camera>
+        <!-- Camera with Orbit Controls -->
+        <a-entity id="camera-rig" position="0 1.6 5">
+            <a-camera 
+                id="camera"
+                look-controls="enabled: false"
+                wasd-controls="enabled: false"
+                orbit-controls="
+                    target: 0 0 0;
+                    enablePan: false;
+                    enableZoom: true;
+                    enableRotate: true;
+                    rotateSpeed: 0.4;
+                    zoomSpeed: 1;
+                    minDistance: 2;
+                    maxDistance: 8;
+                    initialPosition: 0 0 5;
+                    autoRotate: true;
+                    autoRotateSpeed: 0.5;
+                ">
+            </a-camera>
+        </a-entity>
         
-        <!-- Heart Container - This will be positioned by AR.js -->
-        <a-entity id="heart-container" position="0 0 -3" visible="false">
+        <!-- Heart Container -->
+        <a-entity id="heart-container" position="0 0 0">
             
-            <!-- Heart Model -->
-            <a-entity id="human-heart" geometry="primitive: sphere; radius: 1.2" 
-                      material="color: #d32f2f; opacity: 0.9; transparent: true"
+            <!-- Main Heart Model -->
+            <a-entity id="human-heart" 
+                      geometry="primitive: sphere; radius: 1.2; segmentsWidth: 32; segmentsHeight: 32" 
+                      material="color: #d32f2f; opacity: 0.9; transparent: true; roughness: 0.5; metalness: 0.1"
                       class="heart-model"
-                      animation="property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear"
-                      animation__pulse="property: scale; from: 1 1 1; to: 1.05 1.05 1.05; dir: alternate; loop: true; dur: 800; easing: easeInOutSine"
-                      gesture-handler="scale: true; rotation: true"
-                      raycaster="objects: .clickable"
-                      cursor="rayOrigin: mouse">
+                      animation__pulse="property: scale; from: 1 1 1; to: 1.08 1.08 1.08; dir: alternate; loop: true; dur: 900; easing: easeInOutSine">
                 
-                <!-- Right Atrium -->
-                <a-sphere id="right-atrium" position="0.5 0.3 0" radius="0.4" 
-                          material="color: #ff6b6b; opacity: 0.8; transparent: true"
+                <!-- Right Atrium (หัวใจห้องบนขวา) -->
+                <a-entity id="right-atrium" position="0.6 0.4 0" 
+                          geometry="primitive: sphere; radius: 0.45" 
+                          material="color: #ff6b6b; opacity: 0.85; transparent: true; roughness: 0.4"
                           class="clickable heart-part"
-                          data-info="หัวใจห้องบน (Right Atrium) - รับเลือดจากร่างกาย">
-                    <a-animation attribute="material.color" from="#ff6b6b" to="#ff5252" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
-                </a-sphere>
+                          data-info="Right Atrium (หัวใจห้องบนขวา) - รับเลือดดำจากร่างกายทั้งหมด">
+                    <a-animation attribute="material.color" from="#ff6b6b" to="#ff5252" dur="900" repeat="indefinite" direction="alternate"></a-animation>
+                    <a-text value="RA" position="0 0.5 0" align="center" color="white" width="10" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
-                <!-- Left Atrium -->
-                <a-sphere id="left-atrium" position="-0.5 0.3 0" radius="0.4" 
-                          material="color: #ff8a80; opacity: 0.8; transparent: true"
+                <!-- Left Atrium (หัวใจห้องบนซ้าย) -->
+                <a-entity id="left-atrium" position="-0.6 0.4 0" 
+                          geometry="primitive: sphere; radius: 0.45" 
+                          material="color: #ff8a80; opacity: 0.85; transparent: true; roughness: 0.4"
                           class="clickable heart-part"
-                          data-info="หัวใจห้องบน (Left Atrium) - รับเลือดจากปอด">
-                    <a-animation attribute="material.color" from="#ff8a80" to="#ff6b6b" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
-                </a-sphere>
+                          data-info="Left Atrium (หัวใจห้องบนซ้าย) - รับเลือดแดงจากปอดที่อุดมด้วยออกซิเจน">
+                    <a-animation attribute="material.color" from="#ff8a80" to="#ff6b6b" dur="900" repeat="indefinite" direction="alternate"></a-animation>
+                    <a-text value="LA" position="0 0.5 0" align="center" color="white" width="10" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
-                <!-- Right Ventricle -->
-                <a-sphere id="right-ventricle" position="0.4 -0.3 0" radius="0.5" 
-                          material="color: #f44336; opacity: 0.8; transparent: true"
+                <!-- Right Ventricle (หัวใจห้องล่างขวา) -->
+                <a-entity id="right-ventricle" position="0.5 -0.4 0" 
+                          geometry="primitive: sphere; radius: 0.55" 
+                          material="color: #f44336; opacity: 0.85; transparent: true; roughness: 0.4"
                           class="clickable heart-part"
-                          data-info="หัวใจห้องล่าง (Right Ventricle) - สูบฉีดเลือดไปปอด">
-                    <a-animation attribute="material.color" from="#f44336" to="#d32f2f" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
-                </a-sphere>
+                          data-info="Right Ventricle (หัวใจห้องล่างขวา) - สูบฉีดเลือดไปยังปอดเพื่อแลกเปลี่ยนออกซิเจน">
+                    <a-animation attribute="material.color" from="#f44336" to="#d32f2f" dur="900" repeat="indefinite" direction="alternate"></a-animation>
+                    <a-text value="RV" position="0 0.6 0" align="center" color="white" width="10" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
-                <!-- Left Ventricle -->
-                <a-sphere id="left-ventricle" position="-0.4 -0.3 0" radius="0.5" 
-                          material="color: #e53935; opacity: 0.8; transparent: true"
+                <!-- Left Ventricle (หัวใจห้องล่างซ้าย) -->
+                <a-entity id="left-ventricle" position="-0.5 -0.4 0" 
+                          geometry="primitive: sphere; radius: 0.55" 
+                          material="color: #e53935; opacity: 0.85; transparent: true; roughness: 0.4"
                           class="clickable heart-part"
-                          data-info="หัวใจห้องล่าง (Left Ventricle) - สูบฉีดเลือดไปร่างกาย">
-                    <a-animation attribute="material.color" from="#e53935" to="#c62828" dur="1000" repeat="indefinite" direction="alternate"></a-animation>
-                </a-sphere>
+                          data-info="Left Ventricle (หัวใจห้องล่างซ้าย) - สูบฉีดเลือดแดงไปเลี้ยงร่างกายทั้งหมด มีกล้ามเนื้อหนาที่สุด">
+                    <a-animation attribute="material.color" from="#e53935" to="#c62828" dur="900" repeat="indefinite" direction="alternate"></a-animation>
+                    <a-text value="LV" position="0 0.6 0" align="center" color="white" width="10" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
-                <!-- Aorta -->
-                <a-cylinder id="aorta" position="-0.2 0.9 0" radius="0.15" height="0.8" 
-                           material="color: #8b0000; opacity: 0.9"
-                           class="clickable heart-part"
-                           data-info="ออร์ตา (Aorta) - หลอดเลือดใหญ่ส่งเลือดไปร่างกาย">
-                </a-cylinder>
+                <!-- Aorta (ออร์ตา) -->
+                <a-entity id="aorta" position="-0.3 1.0 0" 
+                          geometry="primitive: cylinder; radius: 0.18; height: 0.9" 
+                          material="color: #8b0000; opacity: 0.95; roughness: 0.3"
+                          class="clickable heart-part"
+                          data-info="Aorta (ออร์ตา) - หลอดเลือดแดงใหญ่ที่สุด ส่งเลือดออกซิเจนไปเลี้ยงร่างกาย">
+                    <a-text value="Aorta" position="0 0.6 0" align="center" color="white" width="8" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
-                <!-- Pulmonary Artery -->
-                <a-cylinder id="pulmonary" position="0.2 0.9 0" radius="0.12" height="0.7" 
-                           material="color: #b71c1c; opacity: 0.9"
-                           class="clickable heart-part"
-                           data-info="หลอดเลือดปอด - ส่งเลือดไปปอด">
-                </a-cylinder>
+                <!-- Pulmonary Artery (หลอดเลือดแดงปอด) -->
+                <a-entity id="pulmonary" position="0.3 1.0 0" 
+                          geometry="primitive: cylinder; radius: 0.15; height: 0.8" 
+                          material="color: #b71c1c; opacity: 0.95; roughness: 0.3"
+                          class="clickable heart-part"
+                          data-info="Pulmonary Artery (หลอดเลือดแดงปอด) - ส่งเลือดดำไปยังปอดเพื่อรับออกซิเจน">
+                    <a-text value="PA" position="0 0.55 0" align="center" color="white" width="8" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
-                <!-- Vena Cava -->
-                <a-cylinder id="vena-cava" position="0.5 0.8 0" radius="0.1" height="0.6" 
-                           material="color: #ff8a65; opacity: 0.9"
-                           class="clickable heart-part"
-                           data-info="เวนาคาเวา - รับเลือดจากร่างกาย">
-                </a-cylinder>
-                
-                <!-- Labels -->
-                <a-text value="RA" position="0.5 0.3 0.5" align="center" 
-                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-                        class="label"></a-text>
-                <a-text value="LA" position="-0.5 0.3 0.5" align="center" 
-                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-                        class="label"></a-text>
-                <a-text value="RV" position="0.4 -0.3 0.6" align="center" 
-                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-                        class="label"></a-text>
-                <a-text value="LV" position="-0.4 -0.3 0.6" align="center" 
-                        color="white" width="8" shader="msdf" font="https://cdn.aframe.io/fonts/Roboto-msdf.json"
-                        class="label"></a-text>
+                <!-- Vena Cava (เวนาคาเวา) -->
+                <a-entity id="vena-cava" position="0.6 0.9 0" 
+                          geometry="primitive: cylinder; radius: 0.12; height: 0.7" 
+                          material="color: #ff8a65; opacity: 0.95; roughness: 0.3"
+                          class="clickable heart-part"
+                          data-info="Vena Cava (เวนาคาเวา) - หลอดเลือดดำใหญ่ รับเลือดจากร่างกายกลับสู่หัวใจ">
+                    <a-text value="VC" position="0 0.5 0" align="center" color="white" width="8" shader="msdf" 
+                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
+                </a-entity>
                 
             </a-entity>
             
             <!-- Information Display -->
-            <a-plane id="info-display" position="0 -2.5 0" width="4" height="0.8" 
-                     material="color: #333; opacity: 0.8; transparent: true"
-                     visible="false">
+            <a-entity id="info-display" position="0 -2.8 0" visible="false">
+                <a-plane width="5" height="1" material="color: #000; opacity: 0.8; transparent: true"></a-plane>
                 <a-text id="info-text" value="" position="0 0 0.01" align="center" 
-                        color="white" width="12" shader="msdf" 
+                        color="#fff" width="14" shader="msdf" 
                         font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-            </a-plane>
+            </a-entity>
             
         </a-entity>
         
-        <!-- Lighting -->
-        <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
-        <a-light type="directional" position="2 4 2" color="#ffffff" intensity="0.8" castShadow="true"></a-light>
-        <a-light type="point" position="0 2 0" color="#ffebee" intensity="0.3"></a-light>
+        <!-- Lighting Setup -->
+        <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
+        <a-light type="directional" position="3 5 3" color="#ffffff" intensity="0.8" castShadow="true"></a-light>
+        <a-light type="point" position="0 2 0" color="#ffebee" intensity="0.5"></a-light>
+        <a-light type="point" position="2 2 2" color="#e3f2fd" intensity="0.3"></a-light>
         
-        <!-- Sky -->
+        <!-- Background -->
         <a-sky color="#1a1a2e"></a-sky>
+        
+        <!-- Grid Floor for Reference -->
+        <a-plane position="0 -3 0" rotation="-90 0 0" width="10" height="10" 
+                 material="color: #2d3748; opacity: 0.3; transparent: true; wireframe: true"></a-plane>
         
     </a-scene>
 
     <script>
-        // Hide loading screen when scene is loaded
+        // Scene loaded handler
         document.querySelector('a-scene').addEventListener('loaded', function() {
             setTimeout(() => {
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('heart-container').setAttribute('visible', true);
-            }, 2000);
+            }, 1500);
         });
 
-        // Control variables
+        // Control states
         let isBeating = true;
         let isRotating = true;
         let showParts = true;
+        let wireframeMode = false;
 
-        // Toggle heartbeat animation
+        // Get camera component
+        const cameraRig = document.querySelector('#camera-rig');
+        const camera = document.querySelector('#camera');
+        const orbitControls = camera.components['orbit-controls'];
+
+        // Toggle heartbeat
         document.getElementById('toggleBeat').addEventListener('click', function() {
             const heart = document.getElementById('human-heart');
             const parts = document.querySelectorAll('.heart-part');
             isBeating = !isBeating;
             this.classList.toggle('active');
-            this.textContent = `หัวใจเต้น: ${isBeating ? 'ON' : 'OFF'}`;
+            this.textContent = `💓 เต้น: ${isBeating ? 'ON' : 'OFF'}`;
             
             if (isBeating) {
-                heart.setAttribute('animation__pulse', 'property: scale; from: 1 1 1; to: 1.05 1.05 1.05; dir: alternate; loop: true; dur: 800; easing: easeInOutSine');
+                heart.setAttribute('animation__pulse', 'property: scale; from: 1 1 1; to: 1.08 1.08 1.08; dir: alternate; loop: true; dur: 900; easing: easeInOutSine');
                 parts.forEach(part => {
                     const anim = part.querySelector('a-animation');
                     if (anim) anim.play();
@@ -295,44 +362,71 @@
                 heart.removeAttribute('animation__pulse');
                 parts.forEach(part => {
                     const anim = part.querySelector('a-animation');
-                    if (anim) anim.stop();
+                    if (anim) anim.pause();
                 });
             }
         });
 
-        // Toggle rotation
+        // Toggle auto-rotate
         document.getElementById('toggleRotate').addEventListener('click', function() {
-            const heart = document.getElementById('human-heart');
             isRotating = !isRotating;
             this.classList.toggle('active');
-            this.textContentContent = `หมุนอัตโนมัติ: ${isRotating ? 'ON' : 'OFF'}`;
+            this.textContent = `🔄 หมุนอัตโนมัติ: ${isRotating ? 'ON' : 'OFF'}`;
             
-            if (isRotating) {
-                heart.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 20000; easing: linear');
-            } else {
-                heart.removeAttribute('animation');
+            if (orbitControls) {
+                orbitControls.data.autoRotate = isRotating;
+                orbitControls.update();
             }
         });
 
         // Toggle parts visibility
         document.getElementById('toggleParts').addEventListener('click', function() {
             const parts = document.querySelectorAll('.heart-part, .label');
+            const labels = document.querySelectorAll('a-text');
             showParts = !showParts;
             this.classList.toggle('active');
-            this.textContent = showParts ? 'ซ่อนส่วนประกอบ' : 'แสดงส่วนประกอบ';
+            this.textContent = showParts ? '👁️ ซ่อนส่วน' : '👁️ แสดงส่วน';
             
             parts.forEach(part => {
                 part.setAttribute('visible', showParts);
             });
+            
+            // Force update labels
+            labels.forEach(label => {
+                label.setAttribute('visible', showParts);
+            });
         });
 
-        // Reset view
+        // Reset camera view
         document.getElementById('resetView').addEventListener('click', function() {
-            const heart = document.getElementById('human-heart');
-            heart.setAttribute('position', '0 0 0');
-            heart.setAttribute('rotation', '0 0 0');
-            heart.setAttribute('scale', '1 1 1');
+            cameraRig.setAttribute('position', '0 1.6 5');
+            camera.setAttribute('rotation', '0 0 0');
+            
+            if (orbitControls) {
+                orbitControls.reset();
+                orbitControls.data.autoRotate = isRotating;
+            }
+            
+            // Hide info display
             document.getElementById('info-display').setAttribute('visible', false);
+            
+            // Add reset animation
+            cameraRig.setAttribute('animation', 'property: position; to: 0 1.6 5; dur: 800; easing: easeInOutQuad');
+        });
+
+        // Toggle wireframe mode
+        document.getElementById('toggleWireframe').addEventListener('click', function() {
+            const heartParts = document.querySelectorAll('.heart-part');
+            wireframeMode = !wireframeMode;
+            this.classList.toggle('active');
+            
+            heartParts.forEach(part => {
+                const material = part.getAttribute('material');
+                material.wireframe = wireframeMode;
+                part.setAttribute('material', material);
+            });
+            
+            this.textContent = wireframeMode ? '🔧 Solid' : '🔧 Wireframe';
         });
 
         // Click interaction for heart parts
@@ -342,49 +436,118 @@
                 const infoDisplay = document.getElementById('info-display');
                 const infoText = document.getElementById('info-text');
                 
+                // Update info display
                 infoText.setAttribute('value', info);
                 infoDisplay.setAttribute('visible', true);
                 
                 // Highlight clicked part
-                const originalColor = this.getAttribute('material').color;
+                const originalMaterial = this.getAttribute('material');
+                const originalColor = originalMaterial.color;
+                
                 this.setAttribute('material', 'color', '#ffff00');
                 
                 setTimeout(() => {
                     this.setAttribute('material', 'color', originalColor);
-                }, 1000);
+                }, 800);
                 
                 // Update info panel
                 document.getElementById('part-info').textContent = info;
+                
+                // Auto-hide info display after 5 seconds
+                setTimeout(() => {
+                    infoDisplay.setAttribute('visible', false);
+                }, 5000);
             });
         });
 
-        // Touch gestures for mobile
-        let touchStartX = 0;
-        let touchStartY = 0;
-        
-        document.addEventListener('touchstart', function(e) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        });
-        
-        document.addEventListener('touchmove', function(e) {
-            if (!e.target.classList.contains('btn')) {
-                e.preventDefault();
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            switch(event.code) {
+                case 'Space':
+                    event.preventDefault();
+                    document.getElementById('toggleBeat').click();
+                    break;
+                case 'KeyR':
+                    document.getElementById('resetView').click();
+                    break;
+                case 'KeyH':
+                    const panel = document.getElementById('control-panel');
+                    const isHidden = panel.style.display === 'none';
+                    panel.style.display = isHidden ? 'flex' : 'none';
+                    break;
+                case 'KeyP':
+                    document.getElementById('toggleParts').click();
+                    break;
+                case 'KeyW':
+                    document.getElementById('toggleWireframe').click();
+                    break;
             }
         });
-        
-        // AR.js event listeners
-        window.addEventListener('arjs-nft-loaded', function() {
-            console.log('AR marker detected');
+
+        // Mouse wheel zoom handler
+        document.addEventListener('wheel', function(event) {
+            if (orbitControls) {
+                const currentPos = cameraRig.getAttribute('position');
+                const zoomSpeed = 0.2;
+                const delta = event.deltaY > 0 ? 1 : -1;
+                const newZ = currentPos.z + delta * zoomSpeed;
+                
+                if (newZ >= 2 && newZ <= 8) {
+                    cameraRig.setAttribute('position', {
+                        x: currentPos.x,
+                        y: currentPos.y,
+                        z: newZ
+                    });
+                }
+            }
         });
-        
-        // Handle AR tracking lost/found
-        document.querySelector('a-scene').addEventListener('markerLost', function() {
-            document.getElementById('info-panel').style.display = 'none';
+
+        // Prevent context menu on right click for better UX
+        document.addEventListener('contextmenu', function(event) {
+            if (event.target.tagName === 'CANVAS') {
+                event.preventDefault();
+            }
         });
-        
-        document.querySelector('a-scene').addEventListener('markerFound', function() {
-            document.getElementById('info-panel').style.display = 'block';
+
+        // Touch gesture support for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let initialPinchDistance = 0;
+        let initialCameraZ = 5;
+
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialCameraZ = cameraRig.getAttribute('position').z;
+            }
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const currentPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                
+                const scale = currentPinchDistance / initialPinchDistance;
+                const newZ = initialCameraZ / scale;
+                
+                if (newZ >= 2 && newZ <= 8) {
+                    const currentPos = cameraRig.getAttribute('position');
+                    cameraRig.setAttribute('position', {
+                        x: currentPos.x,
+                        y: currentPos.y,
+                        z: newZ
+                    });
+                }
+            }
         });
     </script>
 </body>
