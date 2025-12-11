@@ -3,552 +3,432 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Human Heart Interactive Viewer</title>
-    
-    <!-- A-Frame Core -->
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    
-    <!-- A-Frame Extras for Orbit Controls -->
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    
+    <title>หัวใจมนุษย์ 3D สมจริง</title>
     <style>
-        body {
-            margin: 0;
-            font-family: 'Sarabun', 'Segoe UI', sans-serif;
-            overflow: hidden;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0f0f1e 100%);
+            font-family: 'Sarabun', sans-serif;
         }
-        
-        #info-panel {
+        #info {
             position: absolute;
             top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 15px;
-            max-width: 350px;
-            z-index: 1000;
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        #info-panel h2 {
-            margin: 0 0 15px 0;
-            color: #d32f2f;
-            font-size: 24px;
+            width: 100%;
             text-align: center;
-            font-weight: bold;
+            color: #fff;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
-        
-        #info-panel p {
-            margin: 8px 0;
-            font-size: 15px;
-            color: #333;
-            line-height: 1.6;
+        h1 { margin: 0; font-weight: 700; color: #ff6b6b; font-size: 1.8rem;}
+        p { margin: 5px; font-size: 1rem; color: #ddd; }
+        canvas { display: block; outline: none; }
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ff6b6b; font-size: 1.2rem; font-weight: bold;
+            background: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px;
         }
-        
-        #part-info {
-            font-weight: bold;
-            color: #d32f2f;
+        #controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        #controls button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
             padding: 10px;
-            background: rgba(211, 47, 47, 0.1);
-            border-radius: 8px;
-            margin-top: 10px;
+            background: #c91e3a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
         }
-        
-        .controls {
+        #controls button:hover {
+            background: #ff4757;
+            transform: scale(1.05);
+        }
+        #info-panel {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px 20px;
-            border-radius: 20px;
-            display: flex;
-            gap: 12px;
-            z-index: 1000;
-            flex-wrap: wrap;
-            justify-content: center;
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            background: #d32f2f;
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.3s;
-            touch-action: manipulation;
-            user-select: none;
-            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
-        }
-        
-        .btn:hover {
-            background: #b71c1c;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4);
-        }
-        
-        .btn.active {
-            background: #388e3c;
-            box-shadow: 0 4px 15px rgba(56, 142, 60, 0.3);
-        }
-        
-        .btn.active:hover {
-            background: #2e7d32;
-            box-shadow: 0 6px 20px rgba(56, 142, 60, 0.4);
-        }
-        
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 28px;
-            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            max-width: 80%;
             text-align: center;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
-            font-weight: bold;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid #d32f2f;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        #controls-hint {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 14px;
             z-index: 1000;
-            max-width: 250px;
+            transition: all 0.3s ease;
+            color: white;
+            border: 1px solid #ff6b6b;
+        }
+        #info-panel h2 {
+            margin: 0 0 10px 0;
+            color: #ff6b6b;
+            font-size: 22px;
+            font-weight: 600;
+        }
+        #info-panel p {
+            margin: 5px 0;
+            color: #eee;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .marker {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(255,107,107,0.8);
+            transition: all 0.3s;
+            border: 2px solid white;
+        }
+        .marker:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            background: #ff4757;
+        }
+        .marker.active {
+            transform: translate(-50%, -50%) scale(1.3);
+            background: #2ed573;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading">
-        <div class="spinner"></div>
-        กำลังโหลดหัวใจ 3D...
+
+    <div id="info">
+        <h1>โมเดลหัวใจมนุษย์ 3D สมจริง</h1>
+        <p>คลิกที่ตัวเลขเพื่อดูข้อมูลเชิงลึกของแต่ละส่วน</p>
+    </div>
+    <div id="loading">กำลังสร้างโมเดลหัวใจ...</div>
+
+    <div id="controls">
+        <button onclick="resetView()">รีเซ็ตมุมมอง</button>
+        <button onclick="toggleRotation()">หยุด/เริ่มหมุนอัตโนมัติ</button>
     </div>
 
-    <!-- Info Panel -->
     <div id="info-panel">
-        <h2>❤️ หัวใจมนุษย์ 3D Interactive</h2>
-        <p><strong>🎮 วิธีใช้งาน:</strong></p>
-        <p>• 🖱️ คลิก+ลากเพื่อหมุนหัวใจ</p>
-        <p>• 📱 แตะ+ลากบนหน้าจอ (มือถือ)</p>
-        <p>• 🔍 เลื่อน Wheel/Pinch เพื่อซูม</p>
-        <p>• 👆 คลิกที่ส่วนต่างๆ ของหัวใจ</p>
-        <p><strong>📋 ข้อมูลส่วนหัวใจ:</strong></p>
-        <p id="part-info">คลิกที่ส่วนต่างๆ เพื่อดูรายละเอียด</p>
+        <h2>หัวใจมนุษย์</h2>
+        <p>คลิกที่ตัวเลขบนโมเดลเพื่อศึกษาส่วนต่างๆ</p>
+        <p style="color: #888; font-size: 12px;">* ลากเมาส์เพื่อหมุนดูรายละเอียด</p>
     </div>
 
-    <!-- Controls Hint -->
-    <div id="controls-hint">
-        <strong>⌨️ คีย์ลัด:</strong><br>
-        Space: หยุด/เล่น การเต้น<br>
-        R: รีเซ็ตมุมมอง<br>
-        H: ซ่อน/แสดง แผงควบคุม
-    </div>
+    <!-- Interactive Markers -->
+    <div id="marker1" class="marker" style="display: none;">1</div>
+    <div id="marker2" class="marker" style="display: none;">2</div>
+    <div id="marker3" class="marker" style="display: none;">3</div>
+    <div id="marker4" class="marker" style="display: none;">4</div>
+    <div id="marker5" class="marker" style="display: none;">5</div>
+    <div id="marker6" class="marker" style="display: none;">6</div>
+    <div id="marker7" class="marker" style="display: none;">7</div>
 
-    <!-- Control Panel -->
-    <div class="controls" id="control-panel">
-        <button class="btn active" id="toggleBeat">💓 เต้น: ON</button>
-        <button class="btn active" id="toggleRotate">🔄 หมุนอัตโนมัติ: ON</button>
-        <button class="btn" id="toggleParts">👁️ ส่วนประกอบ</button>
-        <button class="btn" id="resetView">🏠 รีเซ็ต</button>
-        <button class="btn" id="toggleWireframe">🔧 Wireframe</button>
-    </div>
-
-    <!-- 3D Scene -->
-    <a-scene 
-        embedded 
-        background="color: #1a1a2e"
-        renderer="antialias: true; alpha: true; colorManagement: true"
-        cursor="rayOrigin: mouse"
-        raycaster="objects: .clickable">
-        
-        <!-- Camera with Orbit Controls -->
-        <a-entity id="camera-rig" position="0 1.6 5">
-            <a-camera 
-                id="camera"
-                look-controls="enabled: false"
-                wasd-controls="enabled: false"
-                orbit-controls="
-                    target: 0 0 0;
-                    enablePan: false;
-                    enableZoom: true;
-                    enableRotate: true;
-                    rotateSpeed: 0.4;
-                    zoomSpeed: 1;
-                    minDistance: 2;
-                    maxDistance: 8;
-                    initialPosition: 0 0 5;
-                    autoRotate: true;
-                    autoRotateSpeed: 0.5;
-                ">
-            </a-camera>
-        </a-entity>
-        
-        <!-- Heart Container -->
-        <a-entity id="heart-container" position="0 0 0">
-            
-            <!-- Main Heart Model -->
-            <a-entity id="human-heart" 
-                      geometry="primitive: sphere; radius: 1.2; segmentsWidth: 32; segmentsHeight: 32" 
-                      material="color: #d32f2f; opacity: 0.9; transparent: true; roughness: 0.5; metalness: 0.1"
-                      class="heart-model"
-                      animation__pulse="property: scale; from: 1 1 1; to: 1.08 1.08 1.08; dir: alternate; loop: true; dur: 900; easing: easeInOutSine">
-                
-                <!-- Right Atrium (หัวใจห้องบนขวา) -->
-                <a-entity id="right-atrium" position="0.6 0.4 0" 
-                          geometry="primitive: sphere; radius: 0.45" 
-                          material="color: #ff6b6b; opacity: 0.85; transparent: true; roughness: 0.4"
-                          class="clickable heart-part"
-                          data-info="Right Atrium (หัวใจห้องบนขวา) - รับเลือดดำจากร่างกายทั้งหมด">
-                    <a-animation attribute="material.color" from="#ff6b6b" to="#ff5252" dur="900" repeat="indefinite" direction="alternate"></a-animation>
-                    <a-text value="RA" position="0 0.5 0" align="center" color="white" width="10" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-                <!-- Left Atrium (หัวใจห้องบนซ้าย) -->
-                <a-entity id="left-atrium" position="-0.6 0.4 0" 
-                          geometry="primitive: sphere; radius: 0.45" 
-                          material="color: #ff8a80; opacity: 0.85; transparent: true; roughness: 0.4"
-                          class="clickable heart-part"
-                          data-info="Left Atrium (หัวใจห้องบนซ้าย) - รับเลือดแดงจากปอดที่อุดมด้วยออกซิเจน">
-                    <a-animation attribute="material.color" from="#ff8a80" to="#ff6b6b" dur="900" repeat="indefinite" direction="alternate"></a-animation>
-                    <a-text value="LA" position="0 0.5 0" align="center" color="white" width="10" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-                <!-- Right Ventricle (หัวใจห้องล่างขวา) -->
-                <a-entity id="right-ventricle" position="0.5 -0.4 0" 
-                          geometry="primitive: sphere; radius: 0.55" 
-                          material="color: #f44336; opacity: 0.85; transparent: true; roughness: 0.4"
-                          class="clickable heart-part"
-                          data-info="Right Ventricle (หัวใจห้องล่างขวา) - สูบฉีดเลือดไปยังปอดเพื่อแลกเปลี่ยนออกซิเจน">
-                    <a-animation attribute="material.color" from="#f44336" to="#d32f2f" dur="900" repeat="indefinite" direction="alternate"></a-animation>
-                    <a-text value="RV" position="0 0.6 0" align="center" color="white" width="10" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-                <!-- Left Ventricle (หัวใจห้องล่างซ้าย) -->
-                <a-entity id="left-ventricle" position="-0.5 -0.4 0" 
-                          geometry="primitive: sphere; radius: 0.55" 
-                          material="color: #e53935; opacity: 0.85; transparent: true; roughness: 0.4"
-                          class="clickable heart-part"
-                          data-info="Left Ventricle (หัวใจห้องล่างซ้าย) - สูบฉีดเลือดแดงไปเลี้ยงร่างกายทั้งหมด มีกล้ามเนื้อหนาที่สุด">
-                    <a-animation attribute="material.color" from="#e53935" to="#c62828" dur="900" repeat="indefinite" direction="alternate"></a-animation>
-                    <a-text value="LV" position="0 0.6 0" align="center" color="white" width="10" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-                <!-- Aorta (ออร์ตา) -->
-                <a-entity id="aorta" position="-0.3 1.0 0" 
-                          geometry="primitive: cylinder; radius: 0.18; height: 0.9" 
-                          material="color: #8b0000; opacity: 0.95; roughness: 0.3"
-                          class="clickable heart-part"
-                          data-info="Aorta (ออร์ตา) - หลอดเลือดแดงใหญ่ที่สุด ส่งเลือดออกซิเจนไปเลี้ยงร่างกาย">
-                    <a-text value="Aorta" position="0 0.6 0" align="center" color="white" width="8" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-                <!-- Pulmonary Artery (หลอดเลือดแดงปอด) -->
-                <a-entity id="pulmonary" position="0.3 1.0 0" 
-                          geometry="primitive: cylinder; radius: 0.15; height: 0.8" 
-                          material="color: #b71c1c; opacity: 0.95; roughness: 0.3"
-                          class="clickable heart-part"
-                          data-info="Pulmonary Artery (หลอดเลือดแดงปอด) - ส่งเลือดดำไปยังปอดเพื่อรับออกซิเจน">
-                    <a-text value="PA" position="0 0.55 0" align="center" color="white" width="8" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-                <!-- Vena Cava (เวนาคาเวา) -->
-                <a-entity id="vena-cava" position="0.6 0.9 0" 
-                          geometry="primitive: cylinder; radius: 0.12; height: 0.7" 
-                          material="color: #ff8a65; opacity: 0.95; roughness: 0.3"
-                          class="clickable heart-part"
-                          data-info="Vena Cava (เวนาคาเวา) - หลอดเลือดดำใหญ่ รับเลือดจากร่างกายกลับสู่หัวใจ">
-                    <a-text value="VC" position="0 0.5 0" align="center" color="white" width="8" shader="msdf" 
-                            font="https://cdn.aframe.io/fonts/Roboto-msdf.json" class="label"></a-text>
-                </a-entity>
-                
-            </a-entity>
-            
-            <!-- Information Display -->
-            <a-entity id="info-display" position="0 -2.8 0" visible="false">
-                <a-plane width="5" height="1" material="color: #000; opacity: 0.8; transparent: true"></a-plane>
-                <a-text id="info-text" value="" position="0 0 0.01" align="center" 
-                        color="#fff" width="14" shader="msdf" 
-                        font="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-text>
-            </a-entity>
-            
-        </a-entity>
-        
-        <!-- Lighting Setup -->
-        <a-light type="ambient" color="#ffffff" intensity="0.4"></a-light>
-        <a-light type="directional" position="3 5 3" color="#ffffff" intensity="0.8" castShadow="true"></a-light>
-        <a-light type="point" position="0 2 0" color="#ffebee" intensity="0.5"></a-light>
-        <a-light type="point" position="2 2 2" color="#e3f2fd" intensity="0.3"></a-light>
-        
-        <!-- Background -->
-        <a-sky color="#1a1a2e"></a-sky>
-        
-        <!-- Grid Floor for Reference -->
-        <a-plane position="0 -3 0" rotation="-90 0 0" width="10" height="10" 
-                 material="color: #2d3748; opacity: 0.3; transparent: true; wireframe: true"></a-plane>
-        
-    </a-scene>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <script>
-        // Scene loaded handler
-        document.querySelector('a-scene').addEventListener('loaded', function() {
-            setTimeout(() => {
-                document.getElementById('loading').style.display = 'none';
-            }, 1500);
+        // Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0f0f1e);
+        scene.fog = new THREE.Fog(0x0f0f1e, 10, 25);
+        
+        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 1, 10);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+        
+        // Lighting System
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        mainLight.position.set(5, 8, 5);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
+        
+        const rimLight = new THREE.DirectionalLight(0xff6b6b, 0.6);
+        rimLight.position.set(-5, -5, -5);
+        scene.add(rimLight);
+        
+        const fillLight = new THREE.PointLight(0xffffff, 0.5);
+        fillLight.position.set(0, 0, 8);
+        scene.add(fillLight);
+        
+        // Heart Group
+        const heartGroup = new THREE.Group();
+        
+        // Realistic Heart Material
+        const heartMaterial = new THREE.MeshStandardMaterial({
+            color: 0xcc2e3e,
+            roughness: 0.6,
+            metalness: 0.1,
+            normalScale: new THREE.Vector2(0.5, 0.5)
         });
-
-        // Control states
-        let isBeating = true;
-        let isRotating = true;
-        let showParts = true;
-        let wireframeMode = false;
-
-        // Get camera component
-        const cameraRig = document.querySelector('#camera-rig');
-        const camera = document.querySelector('#camera');
-        const orbitControls = camera.components['orbit-controls'];
-
-        // Toggle heartbeat
-        document.getElementById('toggleBeat').addEventListener('click', function() {
-            const heart = document.getElementById('human-heart');
-            const parts = document.querySelectorAll('.heart-part');
-            isBeating = !isBeating;
-            this.classList.toggle('active');
-            this.textContent = `💓 เต้น: ${isBeating ? 'ON' : 'OFF'}`;
-            
-            if (isBeating) {
-                heart.setAttribute('animation__pulse', 'property: scale; from: 1 1 1; to: 1.08 1.08 1.08; dir: alternate; loop: true; dur: 900; easing: easeInOutSine');
-                parts.forEach(part => {
-                    const anim = part.querySelector('a-animation');
-                    if (anim) anim.play();
-                });
-            } else {
-                heart.removeAttribute('animation__pulse');
-                parts.forEach(part => {
-                    const anim = part.querySelector('a-animation');
-                    if (anim) anim.pause();
-                });
+        
+        // 1. Left Ventricle (Main pumping chamber)
+        const leftVentricle = new THREE.Mesh(
+            new THREE.SphereGeometry(1.8, 64, 64), 
+            heartMaterial
+        );
+        leftVentricle.scale.set(0.9, 1.2, 0.8);
+        leftVentricle.position.set(-0.3, 0, 0);
+        
+        // 2. Right Ventricle
+        const rightVentricle = new THREE.Mesh(
+            new THREE.SphereGeometry(1.4, 64, 64), 
+            heartMaterial
+        );
+        rightVentricle.scale.set(0.7, 1.0, 0.7);
+        rightVentricle.position.set(0.8, -0.2, 0.3);
+        
+        // 3. Left Atrium
+        const leftAtrium = new THREE.Mesh(
+            new THREE.SphereGeometry(0.9, 32, 32), 
+            heartMaterial
+        );
+        leftAtrium.scale.set(0.8, 0.6, 0.9);
+        leftAtrium.position.set(-0.5, 2.2, -0.5);
+        
+        // 4. Right Atrium
+        const rightAtrium = new THREE.Mesh(
+            new THREE.SphereGeometry(0.85, 32, 32), 
+            heartMaterial
+        );
+        rightAtrium.scale.set(0.8, 0.6, 0.9);
+        rightAtrium.position.set(0.6, 2.2, -0.4);
+        
+        // 5. Right Atrial Appendage
+        const appendageGeom = new THREE.SphereGeometry(0.4, 16, 16);
+        appendageGeom.scale(1.5, 0.8, 0.6);
+        const rightAppendage = new THREE.Mesh(appendageGeom, heartMaterial);
+        rightAppendage.position.set(1.2, 2.0, 0.2);
+        
+        // Combine chambers
+        heartGroup.add(leftVentricle, rightVentricle, leftAtrium, rightAtrium, rightAppendage);
+        
+        // 6. Aorta with Arch
+        const aortaCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 2.8, 0),
+            new THREE.Vector3(0, 3.5, 0),
+            new THREE.Vector3(0.5, 4.2, -0.5),
+            new THREE.Vector3(1.2, 4.5, -1.2)
+        ]);
+        const aortaGeometry = new THREE.TubeGeometry(aortaCurve, 32, 0.35, 16, false);
+        const aorta = new THREE.Mesh(aortaGeometry, heartMaterial);
+        heartGroup.add(aorta);
+        
+        // 7. Pulmonary Artery
+        const pulmonaryCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.3, 2.6, -0.2),
+            new THREE.Vector3(0.8, 3.2, -0.8),
+            new THREE.Vector3(1.5, 3.4, -1.5)
+        ]);
+        const pulmonaryGeometry = new THREE.TubeGeometry(pulmonaryCurve, 32, 0.3, 16, false);
+        const pulmonaryArtery = new THREE.Mesh(pulmonaryGeometry, heartMaterial);
+        heartGroup.add(pulmonaryArtery);
+        
+        // 8. Superior Vena Cava
+        const svcGeometry = new THREE.CylinderGeometry(0.22, 0.25, 2.0, 32);
+        const svc = new THREE.Mesh(svcGeometry, heartMaterial);
+        svc.position.set(-0.7, 2.7, 0.3);
+        svc.rotation.z = -0.2;
+        heartGroup.add(svc);
+        
+        // 9. Inferior Vena Cava
+        const ivcGeometry = new THREE.CylinderGeometry(0.25, 0.28, 1.8, 32);
+        const ivc = new THREE.Mesh(ivcGeometry, heartMaterial);
+        ivc.position.set(0, -1.8, 0);
+        heartGroup.add(ivc);
+        
+        // 10. Coronary Arteries (simplified network)
+        const coronaryMaterial = new THREE.MeshStandardMaterial({ color: 0xff4444, roughness: 0.8 });
+        
+        // Left Coronary Artery
+        const leftCoronaryCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 2.0, 0.5),
+            new THREE.Vector3(-0.3, 1.5, 1.0),
+            new THREE.Vector3(-0.8, 0.5, 1.2),
+            new THREE.Vector3(-1.2, -0.5, 0.8)
+        ]);
+        const leftCoronary = new THREE.Mesh(
+            new THREE.TubeGeometry(leftCoronaryCurve, 32, 0.05, 8, false),
+            coronaryMaterial
+        );
+        heartGroup.add(leftCoronary);
+        
+        // Right Coronary Artery
+        const rightCoronaryCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.3, 1.8, 0.5),
+            new THREE.Vector3(1.0, 1.2, 0.8),
+            new THREE.Vector3(1.5, 0, 0.5),
+            new THREE.Vector3(1.3, -1.0, 0.2)
+        ]);
+        const rightCoronary = new THREE.Mesh(
+            new THREE.TubeGeometry(rightCoronaryCurve, 32, 0.05, 8, false),
+            coronaryMaterial
+        );
+        heartGroup.add(rightCoronary);
+        
+        scene.add(heartGroup);
+        
+        // Anatomical Marker Positions
+        const markerPositions = {
+            '1': { x: 0, y: 3.5, z: -1 },
+            '2': { x: 1.2, y: 3.2, z: -1 },
+            '3': { x: -0.7, y: 2.7, z: 0.3 },
+            '4': { x: 0, y: -1.8, z: 0 },
+            '5': { x: -0.8, y: 2, z: 1 },
+            '6': { x: -0.3, y: 1.5, z: 1.2 },
+            '7': { x: 0.6, y: 2.2, z: -0.8 }
+        };
+        
+        // Anatomical Information in Thai
+        const currentInfo = {
+            '1': { 
+                name: 'Aorta (เอาตา)', 
+                desc: 'หลอดเลือดแดงใหญ่ที่สุด ส่งเลือดออกซิเจนไปเลี้ยงทั่วร่างกาย ความดันสูง ผนังหนาแข็งแรง' 
+            },
+            '2': { 
+                name: 'Pulmonary Artery (หลอดเลือดแดงปอด)', 
+                desc: 'ส่งเลือดที่มีคาร์บอนไดออกไซด์จากหัวใจไปยังปอดเพื่อแลกเปลี่ยนก๊าซ เป็นเส้นเดียวที่พาเลือดไม่มีออกซิเจนออกจากหัวใจ' 
+            },
+            '3': { 
+                name: 'Superior Vena Cava (หลอดเลือดดำใหญ่ส่วนบน)', 
+                desc: 'นำเลือดดำจากศีรษะ ลำคอ และแขนทั้งสองข้างกลับสู่ห้องหัวใจห้องขวาบน (Right Atrium)' 
+            },
+            '4': { 
+                name: 'Inferior Vena Cava (หลอดเลือดดำใหญ่ส่วนล่าง)', 
+                desc: 'นำเลือดดำจากลำตัวส่วนล่างและขาทั้งสองข้างกลับสู่หัวใจห้องขวาบน เป็นเส้นเลือดดำที่ใหญ่ที่สุดในร่างกาย' 
+            },
+            '5': { 
+                name: 'Left Ventricle (ห้องล่างซ้าย)', 
+                desc: 'ห้องสูบฉีดเลือดหลัก มีความดันสูงสุด ผนังหนาที่สุด (ประมาณ 10-15 มม.) ส่งเลือดไปทั่วร่างกาย' 
+            },
+            '6': { 
+                name: 'Left Coronary Artery (หลอดเลือดแดงหัวใจซ้าย)', 
+                desc: 'เลี้ยงกล้ามเนื้อหัวใจส่วนใหญ่ แตกสาขาเป็น LAD และ LCx สำคัญมาก ถ้าตีบจะก่อให้เกิดกล้ามเนื้อตาย' 
+            },
+            '7': { 
+                name: 'Pulmonary Veins (หลอดเลือดดำปอด)', 
+                desc: 'นำเลือดที่มีออกซิเจนจากปอด 4 เส้น กลับเข้าห้องหัวใจห้องซ้ายบน (Left Atrium) เพื่อสูบไปเลี้ยงร่างกาย' 
             }
-        });
-
-        // Toggle auto-rotate
-        document.getElementById('toggleRotate').addEventListener('click', function() {
-            isRotating = !isRotating;
-            this.classList.toggle('active');
-            this.textContent = `🔄 หมุนอัตโนมัติ: ${isRotating ? 'ON' : 'OFF'}`;
-            
-            if (orbitControls) {
-                orbitControls.data.autoRotate = isRotating;
-                orbitControls.update();
+        };
+        
+        // Update marker positions
+        function updateMarkerPositions() {
+            for (let i = 1; i <= 7; i++) {
+                const pos = markerPositions[i];
+                const vector = new THREE.Vector3(pos.x, pos.y, pos.z);
+                vector.project(camera);
+                
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+                
+                const marker = document.getElementById(`marker${i}`);
+                marker.style.display = 'block';
+                marker.style.left = x + 'px';
+                marker.style.top = y + 'px';
             }
-        });
-
-        // Toggle parts visibility
-        document.getElementById('toggleParts').addEventListener('click', function() {
-            const parts = document.querySelectorAll('.heart-part, .label');
-            const labels = document.querySelectorAll('a-text');
-            showParts = !showParts;
-            this.classList.toggle('active');
-            this.textContent = showParts ? '👁️ ซ่อนส่วน' : '👁️ แสดงส่วน';
-            
-            parts.forEach(part => {
-                part.setAttribute('visible', showParts);
+        }
+        
+        // Marker click handlers
+        for (let i = 1; i <= 7; i++) {
+            document.getElementById(`marker${i}`).addEventListener('click', function() {
+                const info = currentInfo[i];
+                const panel = document.querySelector('#info-panel');
+                
+                panel.innerHTML = `
+                    <h2>${info.name}</h2>
+                    <p>${info.desc}</p>
+                    <p style="color: #999; font-size: 12px; margin-top: 10px;">คลิกส่วนอื่นเพื่อดูข้อมูลเพิ่มเติม</p>
+                `;
+                
+                // Reset all markers
+                document.querySelectorAll('.marker').forEach(m => m.classList.remove('active'));
+                this.classList.add('active');
             });
+        }
+        
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 5;
+        controls.maxDistance = 20;
+        
+        let time = 0;
+        let rotating = true;
+        
+        // Hide loading
+        document.getElementById('loading').style.display = 'none';
+        
+        // Control functions
+        window.toggleRotation = function() {
+            rotating = !rotating;
+        };
+        
+        window.resetView = function() {
+            camera.position.set(0, 1, 10);
+            controls.reset();
+            document.querySelectorAll('.marker').forEach(m => m.classList.remove('active'));
+        };
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
             
-            // Force update labels
-            labels.forEach(label => {
-                label.setAttribute('visible', showParts);
-            });
-        });
-
-        // Reset camera view
-        document.getElementById('resetView').addEventListener('click', function() {
-            cameraRig.setAttribute('position', '0 1.6 5');
-            camera.setAttribute('rotation', '0 0 0');
+            // Realistic heartbeat
+            const beat = Math.sin(time * 3) * 0.5 + 0.5;
+            const scale = 1.0 + (beat * 0.03);
+            heartGroup.scale.set(scale, scale, scale);
             
-            if (orbitControls) {
-                orbitControls.reset();
-                orbitControls.data.autoRotate = isRotating;
+            // Subtle movement
+            heartGroup.rotation.z = Math.sin(time * 0.5) * 0.01;
+            
+            // Auto rotation
+            if (rotating) {
+                heartGroup.rotation.y += 0.003;
             }
             
-            // Hide info display
-            document.getElementById('info-display').setAttribute('visible', false);
-            
-            // Add reset animation
-            cameraRig.setAttribute('animation', 'property: position; to: 0 1.6 5; dur: 800; easing: easeInOutQuad');
+            controls.update();
+            renderer.render(scene, camera);
+            updateMarkerPositions();
+        }
+        
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        // Toggle wireframe mode
-        document.getElementById('toggleWireframe').addEventListener('click', function() {
-            const heartParts = document.querySelectorAll('.heart-part');
-            wireframeMode = !wireframeMode;
-            this.classList.toggle('active');
-            
-            heartParts.forEach(part => {
-                const material = part.getAttribute('material');
-                material.wireframe = wireframeMode;
-                part.setAttribute('material', material);
-            });
-            
-            this.textContent = wireframeMode ? '🔧 Solid' : '🔧 Wireframe';
-        });
-
-        // Click interaction for heart parts
-        document.querySelectorAll('.heart-part').forEach(part => {
-            part.addEventListener('click', function() {
-                const info = this.getAttribute('data-info');
-                const infoDisplay = document.getElementById('info-display');
-                const infoText = document.getElementById('info-text');
-                
-                // Update info display
-                infoText.setAttribute('value', info);
-                infoDisplay.setAttribute('visible', true);
-                
-                // Highlight clicked part
-                const originalMaterial = this.getAttribute('material');
-                const originalColor = originalMaterial.color;
-                
-                this.setAttribute('material', 'color', '#ffff00');
-                
-                setTimeout(() => {
-                    this.setAttribute('material', 'color', originalColor);
-                }, 800);
-                
-                // Update info panel
-                document.getElementById('part-info').textContent = info;
-                
-                // Auto-hide info display after 5 seconds
-                setTimeout(() => {
-                    infoDisplay.setAttribute('visible', false);
-                }, 5000);
-            });
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(event) {
-            switch(event.code) {
-                case 'Space':
-                    event.preventDefault();
-                    document.getElementById('toggleBeat').click();
-                    break;
-                case 'KeyR':
-                    document.getElementById('resetView').click();
-                    break;
-                case 'KeyH':
-                    const panel = document.getElementById('control-panel');
-                    const isHidden = panel.style.display === 'none';
-                    panel.style.display = isHidden ? 'flex' : 'none';
-                    break;
-                case 'KeyP':
-                    document.getElementById('toggleParts').click();
-                    break;
-                case 'KeyW':
-                    document.getElementById('toggleWireframe').click();
-                    break;
-            }
-        });
-
-        // Mouse wheel zoom handler
-        document.addEventListener('wheel', function(event) {
-            if (orbitControls) {
-                const currentPos = cameraRig.getAttribute('position');
-                const zoomSpeed = 0.2;
-                const delta = event.deltaY > 0 ? 1 : -1;
-                const newZ = currentPos.z + delta * zoomSpeed;
-                
-                if (newZ >= 2 && newZ <= 8) {
-                    cameraRig.setAttribute('position', {
-                        x: currentPos.x,
-                        y: currentPos.y,
-                        z: newZ
-                    });
-                }
-            }
-        });
-
-        // Prevent context menu on right click for better UX
-        document.addEventListener('contextmenu', function(event) {
-            if (event.target.tagName === 'CANVAS') {
-                event.preventDefault();
-            }
-        });
-
-        // Touch gesture support for mobile
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let initialPinchDistance = 0;
-        let initialCameraZ = 5;
-
-        document.addEventListener('touchstart', function(e) {
-            if (e.touches.length === 1) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-            } else if (e.touches.length === 2) {
-                initialPinchDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                initialCameraZ = cameraRig.getAttribute('position').z;
-            }
-        });
-
-        document.addEventListener('touchmove', function(e) {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                const currentPinchDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                
-                const scale = currentPinchDistance / initialPinchDistance;
-                const newZ = initialCameraZ / scale;
-                
-                if (newZ >= 2 && newZ <= 8) {
-                    const currentPos = cameraRig.getAttribute('position');
-                    cameraRig.setAttribute('position', {
-                        x: currentPos.x,
-                        y: currentPos.y,
-                        z: newZ
-                    });
-                }
-            }
-        });
+        
+        animate();
     </script>
 </body>
 </html>
