@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>โมเดลสมองมนุษย์ 3D XR (Professional)</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0c0c1a 100%);
+            font-family: 'Sarabun', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        canvas { display: block; outline: none; touch-action: none; }
+        
+        #loading {
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            color: #ffcccc; font-family: sans-serif; font-weight: bold;
+            font-size: 1.5rem; text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+            z-index: 5000;
+        }
+        
+        #info {
+            position: absolute;
+            top: 15px;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
+            transition: opacity 0.5s;
+        }
+        h1 { margin: 0; font-weight: 700; color: #ffcccc; font-size: 1.8rem;}
+        p { margin: 5px; font-size: 1rem; color: #ddd; }
+        
+        #controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.8);
+            padding: 12px;
+            border-radius: 10px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.5s;
+        }
+        #controls button {
+            display: block;
+            width: 100%;
+            margin: 4px 0;
+            padding: 10px;
+            background: #c44c4c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+        #controls button:hover {
+            background: #ff6b9c;
+            transform: scale(1.05);
+        }
+
+        #bottom-ui-container {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+
+        #info-panel {
+            background: rgba(0, 0, 0, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            width: 60%;
+            max-width: 500px;
+            text-align: center;
+            color: white;
+            border: 1px solid #ffcccc;
+            pointer-events: auto;
+            margin: 0 15px;
+            position: relative;
+        }
+        
+        .nav-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: #ffcccc;
+            border: 2px solid #ffcccc;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .nav-btn:hover {
+            background: #ffcccc;
+            color: #1a1a2e;
+            transform: scale(1.1);
+        }
+        .nav-btn:active { transform: scale(0.9); }
+
+        #legend {
+            position: absolute; top: 50%; left: 20px; transform: translateY(-50%);
+            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px;
+            color: white; font-size: 12px; z-index: 1000;
+            backdrop-filter: blur(10px); transition: opacity 0.5s;
+        }
+        #legend h3 { margin: 0 0 10px 0; color: #ffcccc; font-size: 14px; }
+        #legend div { margin: 5px 0; }
+        #legend span { display: inline-block; width: 20px; height: 3px; margin-right: 5px; vertical-align: middle; }
+        
+        #ar-button { 
+            background: #2ed573 !important; 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            z-index: 1001; 
+            display: none;
+            border-color: #2ed573 !important;
+        }
+        
+        .hidden { opacity: 0 !important; pointer-events: none !important; }
+
+        #marker-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 100; 
+        }
+        
+        .marker-container { 
+            position: absolute; 
+            cursor: pointer; 
+            pointer-events: auto; 
+            transition: all 0.3s; 
+            z-index: 101; 
+        }
+        .marker-container:hover { transform: scale(1.2); }
+        .marker-number {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #ffcccc, #c44c4c);
+            color: #1a1a2e; font-weight: bold; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 0 12px rgba(255,204,204,0.7);
+            text-shadow: none;
+        }
+
+        /* --- SCENE NAVIGATION BUTTONS --- */
+        .scene-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            font-size: 40px;
+            padding: 15px 20px;
+            cursor: pointer;
+            z-index: 2000;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+            pointer-events: auto;
+        }
+        .scene-nav-btn:hover {
+            background: rgba(255, 204, 204, 0.8);
+            color: #1a1a2e;
+            border-color: transparent;
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 204, 204, 0.6);
+        }
+        .scene-nav-btn:active { transform: translateY(-50%) scale(0.9); }
+        .prev-scene { left: 20px; }
+        .next-scene { right: 20px; }
+
+        @media screen and (max-width: 768px) {
+            #info-panel {
+                width: 85% !important;
+                max-width: 90% !important;
+                padding: 12px 15px !important;
+                border-radius: 12px !important;
+            }
+            #info-panel h2 {
+                font-size: 18px !important;
+                margin-bottom: 8px !important;
+            }
+            #info-panel p {
+                font-size: 13px !important;
+                line-height: 1.5 !important;
+                margin: 5px 0 !important;
+            }
+            .nav-btn {
+                width: 55px !important;
+                height: 55px !important;
+                font-size: 26px !important;
+                margin: 0 8px !important;
+            }
+            #controls {
+                padding: 10px !important;
+                top: 10px !important;
+                right: 10px !important;
+            }
+            #legend {
+                font-size: 10px !important;
+                padding: 10px !important;
+                top: auto !important;
+                bottom: 10px !important;
+                left: 10px !important;
+                transform: none !important;
+                max-width: 130px !important;
+            }
+            #info h1 {
+                font-size: 1.3rem !important;
+            }
+            .marker-number {
+                width: 30px !important;
+                height: 30px !important;
+                font-size: 15px !important;
+            }
+            .scene-nav-btn {
+                font-size: 30px !important;
+                padding: 10px 15px !important;
+                top: auto !important;
+                bottom: 20px !important;
+                transform: none !important;
+            }
+            .prev-scene { left: 15px !important; }
+            .next-scene { right: 15px !important; }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div id="loading">GENERATING NEUROANATOMY...</div>
+
+    <div id="info">
+        <h1>โมเดลสมองมนุษย์ 3D XR</h1>
+        <p>คลิกซ้าย-ขวาริมจอเพื่อดูจุดสำคัญ | หมุน-ซูมเพื่อสำรวจ</p>
+    </div>
+    <!-- จากสมอง → ไปปอด (ซ้าย), ไปหัวใจ (ขวา) -->
+    <button class="scene-nav-btn prev-scene" onclick="window.location.href='lungs.html'" title="ไปโมเดลปอด">❮</button>
+    <button class="scene-nav-btn next-scene" onclick="window.location.href='Hard.html'" title="ไปโมเดลหัวใจ">❯</button>
+  
+
+    <button id="ar-button" onclick="enterAR()">เข้าโหมด AR</button>
+
+    <div id="controls">
+        <button onclick="resetView()">รีเซ็ตมุมมอง</button>
+        <button onclick="toggleRotation()">หยุด/เริ่มหมุนอัตโนมัติ</button>
+        <button onclick="toggleLabels()">เปิด/ปิดลูกศรชี้</button>
+    </div>
+
+    <div id="legend">
+        <h3>ส่วนประกอบ</h3>
+        <div><span style="background: #ffcccc;"></span>เยื่อหุ้มสมอง (Cortex)</div>
+        <div><span style="background: #bd7b7b;"></span>สมองน้อย (Cerebellum)</div>
+        <div><span style="background: #cc2e3e;"></span>สมองส่วนล่าง (Brainstem)</div>
+    </div>
+
+    <div id="bottom-ui-container">
+        <button class="nav-btn" onclick="navigateMarker(-1)">❮</button>
+        <div id="info-panel">
+            <h2>สมองมนุษย์</h2>
+            <p>คลิกที่ลูกศรเพื่อสำรวจส่วนต่างๆ ของสมอง</p>
+            <p style="color: #888; font-size: 12px;">* มีจุดทั้งหมด 12 จุด</p>
+        </div>
+        <button class="nav-btn" onclick="navigateMarker(1)">❯</button>
+    </div>
+
+    <canvas id="marker-canvas"></canvas>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    
+    // import three.js
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+
+        // Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x110b0b);
+        scene.fog = new THREE.Fog(0x110b0b, 8, 30);
+        
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(-8, 2, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.xr.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const mainLight = new THREE.DirectionalLight(0xffeebb, 2);
+        mainLight.position.set(-5, 10, 5);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.set(2048, 2048);
+        scene.add(mainLight);
+
+        const fillLight = new THREE.PointLight(0xc44c4c, 1.5);
+        fillLight.position.set(5, 0, 0);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.SpotLight(0xffffff, 5);
+        rimLight.position.set(0, 5, -10);
+        scene.add(rimLight);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        // Materials
+        const brainMat = new THREE.MeshPhysicalMaterial({
+            color: 0xcc8888,
+            roughness: 0.25,
+            metalness: 0.1,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.3,
+            transmission: 0.1,
+            thickness: 2.0,
+            ior: 1.45,
+            side: THREE.DoubleSide
+        });
+
+        const cereMat = new THREE.MeshPhysicalMaterial({
+            color: 0xbd7b7b,
+            roughness: 0.3,
+            metalness: 0.0,
+            clearcoat: 0.6,
+            side: THREE.DoubleSide
+        });
+
+        const simplex = new SimplexNoise();
+
+        // Brain Generation
+        function createCerebrum() {
+            const geometry = new THREE.IcosahedronGeometry(2.0, 80);
+            const pos = geometry.attributes.position;
+            const vector = new THREE.Vector3();
+            
+            for (let i = 0; i < pos.count; i++) {
+                vector.fromBufferAttribute(pos, i);
+                let [x, y, z] = [vector.x * 1.3, vector.y, vector.z * 0.85];
+
+                if (y < -0.5 && x > 0) y += 0.5 * (x * 0.5);
+
+                const scale = 1.2;
+                const n1 = simplex.noise3d(x * scale, y * scale, z * scale);
+                const n2 = simplex.noise3d(x * scale * 2.5, y * scale * 2.5, z * scale * 2.5);
+                const ridge = Math.pow(Math.abs(n1), 0.8);
+                const detail = n2 * 0.1;
+                const displacement = 0.3 * (ridge + detail);
+                const normal = vector.clone().normalize();
+                
+                let fissure = 1.0;
+                if (Math.abs(z) < 0.15) {
+                    fissure = Math.pow(Math.abs(z) / 0.15, 0.5);
+                }
+
+                vector.set(x, y, z).add(normal.multiplyScalar(displacement * fissure));
+                pos.setXYZ(i, vector.x, vector.y, vector.z);
+            }
+
+            geometry.computeVertexNormals();
+            const mesh = new THREE.Mesh(geometry, brainMat);
+            mesh.castShadow = mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        function createCerebellum() {
+            const geometry = new THREE.SphereGeometry(1.0, 128, 128);
+            const pos = geometry.attributes.position;
+            const vector = new THREE.Vector3();
+
+            for (let i = 0; i < pos.count; i++) {
+                vector.fromBufferAttribute(pos, i);
+                vector.x *= 0.9; vector.y *= 0.6; vector.z *= 1.2;
+
+                const stripeFreq = 15.0;
+                const stripeNoise = simplex.noise3d(vector.x * 2, vector.y * 2, vector.z * 2) * 0.1;
+                const stripes = Math.sin((vector.y + stripeNoise) * stripeFreq);
+                const displacement = (stripes + 1) * 0.08;
+                
+                vector.add(vector.clone().normalize().multiplyScalar(displacement));
+                pos.setXYZ(i, vector.x, vector.y, vector.z);
+            }
+
+            geometry.computeVertexNormals();
+            const mesh = new THREE.Mesh(geometry, cereMat);
+            mesh.position.set(1.8, -1.2, 0);
+            mesh.rotation.z = 0.2;
+            mesh.castShadow = mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        function createBrainstem() {
+            class CustomSinCurve extends THREE.Curve {
+                getPoint(t) {
+                    const [tx, ty, tz] = [t * 3 - 1.5, Math.cos(t * Math.PI * 0.5) * -1.5, 0];
+                    return new THREE.Vector3(tx, ty, tz).multiplyScalar(0.8);
+                }
+            }
+            const geometry = new THREE.TubeGeometry(new CustomSinCurve(), 20, 0.5, 16, false);
+            const pos = geometry.attributes.position;
+            const vector = new THREE.Vector3();
+            
+            for (let i = 0; i < pos.count; i++) {
+                vector.fromBufferAttribute(pos, i);
+                vector.add(new THREE.Vector3(0, Math.sin(vector.x * 20) * 0.05, 0));
+                pos.setXYZ(i, vector.x, vector.y, vector.z);
+            }
+
+            geometry.computeVertexNormals();
+            const mesh = new THREE.Mesh(geometry, cereMat);
+            mesh.position.set(0.2, -1.5, 0);
+            mesh.rotation.z = -Math.PI / 4;
+            mesh.castShadow = mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        // Scene Assembly
+        const brainGroup = new THREE.Group();
+        brainGroup.add(createCerebrum(), createCerebellum(), createBrainstem());
+        scene.add(brainGroup);
+
+        // UI State
+        document.getElementById('loading').style.display = 'none';
+        const markerCanvas = document.getElementById('marker-canvas');
+        const markerCtx = markerCanvas.getContext('2d');
+        markerCanvas.width = window.innerWidth;
+        markerCanvas.height = window.innerHeight;
+
+        const fixedLabelPositions = {
+            1: { x: 50, y: 15 }, 2: { x: 20, y: 30 }, 3: { x: 80, y: 30 },
+            4: { x: 50, y: 85 }, 5: { x: 30, y: 70 }, 6: { x: 70, y: 70 },
+            7: { x: 50, y: 50 }, 8: { x: 25, y: 45 }, 9: { x: 75, y: 45 },
+            10: { x: 50, y: 35 }, 11: { x: 35, y: 60 }, 12: { x: 65, y: 60 }
+        };
+
+        const markerData = [
+            { id: 1, name: "สมองส่วนหน้า", pos: { x: 0, y: 1.5, z: 2.2 }, color: "#ffcccc", type: "cortex", desc: "ควบคุมการตัดสินใจ การวางแผน และบุคลิกภาพ 30% พื้นที่สมอง" },
+            { id: 2, name: "สมองส่วนขมับ", pos: { x: -2.5, y: -0.5, z: 1.5 }, color: "#ffcccc", type: "cortex", desc: "ความจำ การรับรู้เสียง และภาษา" },
+            { id: 3, name: "สมองส่วนคาง", pos: { x: 2.5, y: 0.5, z: 1.8 }, color: "#ffcccc", type: "cortex", desc: "ประมวลผลสัมผัส พื้นที่และการเคลื่อนไหว" },
+            { id: 4, name: "สมองส่วนหลัง", pos: { x: 0, y: 0.5, z: -2.0 }, color: "#ffcccc", type: "cortex", desc: "ประมวลผลการมองเห็น" },
+            { id: 5, name: "สมองน้อย", pos: { x: 2.0, y: -1.2, z: 0 }, color: "#bd7b7b", type: "cerebellum", desc: "ควบคุมการทรงตัวและประสานงานกล้ามเนื้อ" },
+            { id: 6, name: "สมองส่วนล่าง", pos: { x: 0.5, y: -2.0, z: 0 }, color: "#cc2e3e", type: "brainstem", desc: "ควบคุมการหายใจและการเต้นของหัวใจ" },
+            { id: 7, name: "แนวแยกยาว", pos: { x: 0, y: 0.5, z: 0 }, color: "#ffcccc", type: "fissure", desc: "รอยแยกระหว่างซีกสมองซ้ายและขวา" },
+            { id: 8, name: "ลิ้นหน้า", pos: { x: -1.5, y: 1.0, z: 1.8 }, color: "#ffe0e0", type: "gyrus", desc: "ศูนย์ควบคุมการเคลื่อนไหวของกล้ามเนื้อ" },
+            { id: 9, name: "ลิ้นหลัง", pos: { x: 1.8, y: 0.8, z: 1.5 }, color: "#ffe0e0", type: "gyrus", desc: "รับสัญญาณความรู้สึกจากทั่วร่างกาย" },
+            { id: 10, name: "ร่องสมองกลาง", pos: { x: -1.2, y: -0.8, z: 1.0 }, color: "#ffcccc", type: "fissure", desc: "แนวแยกที่สำคัญของสมอง" },
+            { id: 11, name: "สะพานสมอง", pos: { x: 0.8, y: -1.5, z: 0.3 }, color: "#a55", type: "brainstem", desc: "ทางผ่านเส้นประสาทสู่ไขสันหลัง" },
+            { id: 12, name: "มัธธุลาปลาย", pos: { x: 0.3, y: -2.5, z: 0.2 }, color: "#8b0000", type: "brainstem", desc: "ควบคุมการหายใจและการเต้นของหัวใจ" }
+        ];
+
+        let showLabels = true, activeMarker = null, currentMarkerIndex = -1;
+        let isARMode = false, autoHideTimer = null, uiVisible = true, rotating = true;
+        const markerElements = {};
+        
+        markerData.forEach((data, index) => {
+            const container = document.createElement('div');
+            container.className = 'marker-container';
+            const number = document.createElement('div');
+            number.className = 'marker-number';
+            number.style.background = `linear-gradient(135deg, ${data.color}, #c44c4c)`;
+            number.textContent = data.id;
+            container.appendChild(number);
+            container.style.display = 'none';
+            document.body.appendChild(container);
+            
+            const fixedPos = fixedLabelPositions[data.id];
+            container.style.left = `${fixedPos.x}%`;
+            container.style.top = `${fixedPos.y}%`;
+            container.style.transform = 'translate(-50%, -50%)';
+            markerElements[data.id] = { container, data, index };
+            container.addEventListener('click', () => selectMarkerByIndex(index));
+        });
+
+        function isMobile() {
+            return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function adjustForMobile() {
+            if (isMobile()) {
+                brainGroup.scale.set(0.7, 0.7, 0.7);
+                camera.position.set(-8, 2, 15);
+            }
+        }
+
+        function navigateMarker(direction) {
+            let newIndex = currentMarkerIndex + direction;
+            if (newIndex < 0) newIndex = markerData.length - 1;
+            if (newIndex >= markerData.length) newIndex = 0;
+            selectMarkerByIndex(newIndex);
+        }
+        window.navigateMarker = navigateMarker;
+
+        function selectMarkerByIndex(index) {
+            currentMarkerIndex = index;
+            const data = markerData[index];
+            clearTimeout(autoHideTimer);
+            showInfo(data);
+            showUI();
+            autoHideUI();
+        }
+
+        function showInfo(data) {
+            const panel = document.getElementById('info-panel');
+            panel.innerHTML = `
+                <h2>${data.id}. ${data.name}</h2>
+                <p>${data.desc}</p>
+                <p style="color: #999; font-size: 12px; margin-top: 10px;">ประเภท: ${getTypeLabel(data.type)}</p>
+                <div style="font-size:12px; margin-top:5px; color:#ffcccc;">(${currentMarkerIndex + 1} / ${markerData.length})</div>
+            `;
+            Object.values(markerElements).forEach(el => {
+                el.container.style.filter = 'brightness(1)';
+                el.container.style.transform = 'translate(-50%, -50%) scale(1)';
+            });
+            const el = markerElements[data.id];
+            el.container.style.filter = 'brightness(1.5) drop-shadow(0 0 10px #fff)';
+            el.container.style.transform = 'translate(-50%, -50%) scale(1.3)';
+            activeMarker = data.id;
+        }
+
+        function getTypeLabel(type) {
+            const labels = { cortex: 'เยื่อหุ้มสมอง', cerebellum: 'สมองน้อย', brainstem: 'สมองส่วนล่าง', fissure: 'ร่องสมอง', gyrus: 'ลิ้นสมอง' };
+            return labels[type] || 'อื่นๆ';
+        }
+
+        function updateMarkers() {
+            markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
+            if (!showLabels) {
+                Object.values(markerElements).forEach(el => el.container.style.display = 'none');
+                return;
+            }
+            markerData.forEach(data => {
+                const vector = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
+                vector.applyMatrix4(brainGroup.matrixWorld);
+                vector.project(camera);
+                if (vector.z > 1) {
+                    markerElements[data.id].container.style.display = 'none';
+                    return;
+                }
+                const [endX, endY] = [(vector.x * 0.5 + 0.5) * window.innerWidth, (-vector.y * 0.5 + 0.5) * window.innerHeight];
+                const fixedPos = fixedLabelPositions[data.id];
+                const [startX, startY] = [(fixedPos.x / 100) * window.innerWidth, (fixedPos.y / 100) * window.innerHeight];
+                const distance = camera.position.distanceTo(vector.applyMatrix4(brainGroup.matrixWorld));
+
+                markerCtx.strokeStyle = data.color;
+                markerCtx.lineWidth = 3;
+                markerCtx.globalAlpha = Math.max(0.3, 1 - distance / 15);
+                markerCtx.beginPath(); markerCtx.moveTo(startX, startY); markerCtx.lineTo(endX, endY); markerCtx.stroke();
+                markerCtx.fillStyle = data.color; markerCtx.beginPath(); markerCtx.arc(endX, endY, 5, 0, Math.PI * 2); markerCtx.fill();
+                
+                const markerEl = markerElements[data.id].container;
+                markerEl.style.display = 'block';
+                markerEl.style.opacity = Math.max(0.4, 1 - distance / 12);
+            });
+        }
+
+        function autoHideUI() {
+            clearTimeout(autoHideTimer);
+            autoHideTimer = setTimeout(() => {
+                if (!isARMode && !isMobile()) hideUI();
+            }, 10000);
+        }
+
+        function hideUI() {
+            uiVisible = false;
+            document.getElementById('info').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            document.getElementById('legend').classList.add('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.add('hidden'));
+        }
+
+        function showUI() {
+            uiVisible = true;
+            document.getElementById('info').classList.remove('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            document.getElementById('legend').classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('hidden'));
+        }
+
+        function resetAutoHide() {
+            clearTimeout(autoHideTimer);
+            if (!uiVisible) showUI();
+            autoHideUI();
+        }
+
+        async function checkARSupport() { 
+            if ('xr' in navigator) { 
+                try { 
+                    const s = await navigator.xr.isSessionSupported('immersive-ar'); 
+                    if(s) document.getElementById('ar-button').style.display='block'; 
+                } catch(e){} 
+            } 
+        }
+        checkARSupport();
+
+        async function enterAR() {
+            if (!navigator.xr) return;
+            const session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] });
+            renderer.xr.setSession(session); 
+            isARMode = true;
+            brainGroup.scale.set(0.15, 0.15, 0.15); 
+            brainGroup.position.set(0, 0, -1);
+            ['info', 'legend', 'bottom-ui-container'].forEach(id => document.getElementById(id).style.display='none');
+            document.querySelectorAll('.nav-btn').forEach(b => b.style.display='none');
+            session.addEventListener('end', () => { 
+                isARMode=false; 
+                brainGroup.scale.set(1, 1, 1); 
+                brainGroup.position.set(0, 0, 0);
+                ['info', 'legend', 'bottom-ui-container'].forEach(id => document.getElementById(id).style.display='block');
+                document.querySelectorAll('.nav-btn').forEach(b => b.style.display='flex');
+                adjustForMobile();
+            });
+        }
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        
+        const clock = new THREE.Clock();
+
+        window.resetView = () => { 
+            camera.position.set(-8, 2, isMobile() ? 15 : 8);
+            controls.reset(); 
+            currentMarkerIndex = -1;
+            document.getElementById('info-panel').innerHTML = `
+                <h2>สมองมนุษย์</h2>
+                <p>คลิกที่ลูกศรเพื่อสำรวจส่วนต่างๆ ของสมอง</p>
+                <p style="color: #888; font-size: 12px;">* มีจุดทั้งหมด 12 จุด</p>
+            `;
+            Object.values(markerElements).forEach(el => el.container.style.filter='brightness(1)');
+            adjustForMobile();
+            resetAutoHide(); 
+        };
+        
+        window.toggleRotation = () => { rotating = !rotating; resetAutoHide(); };
+        window.toggleLabels = () => { showLabels = !showLabels; resetAutoHide(); };
+        window.enterAR = enterAR;
+
+        ['click', 'touchstart', 'touchmove', 'mousemove'].forEach(e => document.addEventListener(e, resetAutoHide));
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if (rotating && !isARMode) {
+                brainGroup.rotation.y = Math.sin(time * 0.5) * 0.15;
+                brainGroup.rotation.x = Math.sin(time * 0.3) * 0.05;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+            updateMarkers();
+        }
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            markerCanvas.width = window.innerWidth;
+            markerCanvas.height = window.innerHeight;
+            adjustForMobile();
+        });
+
+        adjustForMobile();
+        selectMarkerByIndex(0);
+        animate();
+    </script>
+</body>
+</html>

@@ -2,8 +2,10 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>โมเดลปอดมนุษย์ 3D XR (Navigation)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>โมเดลปอดมนุษย์ 3D XR (Hyper-Real)</title>
     <style>
         body { 
             margin: 0; 
@@ -11,7 +13,17 @@
             background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0c0c1a 100%);
             font-family: 'Sarabun', sans-serif;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #ff8888; font-family: sans-serif; font-size: 14px; letter-spacing: 2px;
+            background: rgba(20,0,0,0.8); padding: 15px 30px; border-radius: 30px;
+            border: 1px solid #552222; pointer-events: none; z-index: 5000;
+        }
+        canvas { display: block; outline: none; touch-action: none; }
+        
         #info {
             position: absolute;
             top: 20px;
@@ -25,7 +37,6 @@
         }
         h1 { margin: 0; font-weight: 700; color: #ff6b6b; font-size: 1.8rem;}
         p { margin: 5px; font-size: 1rem; color: #ddd; }
-        canvas { display: block; outline: none; }
         
         #controls {
             position: absolute;
@@ -84,7 +95,7 @@
             margin: 0 15px;
             position: relative;
         }
-
+        
         .nav-btn {
             background: rgba(0, 0, 0, 0.6);
             color: #d2691e;
@@ -111,7 +122,6 @@
         #info-panel h2 { margin: 0 0 10px 0; color: #ff6b6b; font-size: 24px; font-weight: 600; }
         #info-panel p { margin: 8px 0; color: #eee; font-size: 16px; line-height: 1.6; }
 
-        /* --- CSS ปุ่มเปลี่ยนฉาก (Scene Navigation) --- */
         .scene-nav-btn {
             position: absolute;
             top: 50%;
@@ -165,15 +175,17 @@
 </head>
 <body>
 
+    <div id="loading">GENERATING 4K TISSUE TEXTURES...</div>
+
     <div id="info">
         <h1>โมเดลปอดมนุษย์ 3D XR</h1>
         <p>คลิกซ้าย-ขวาริมจอเพื่อเปลี่ยนโมเดล | ปุ่มล่างเพื่อดูข้อมูล</p>
     </div>
     
-    <button class="scene-nav-btn prev-scene" onclick="window.location.href='Hard.html'" title="ไปโมเดลหัวใจ">❮</button>
-    <button class="scene-nav-btn next-scene" onclick="window.location.href='Hard.html'" title="ไปโมเดลหัวใจ">❯</button>
+   <!-- จากปอด → ไปหัวใจ (ซ้าย), ไปสมอง (ขวา) หรือตามลำดับที่คุณต้องการ -->
+   <button class="scene-nav-btn prev-scene" onclick="window.location.href='Hard.html'" title="ไปโมเดลหัวใจ">❮</button>
+   <button class="scene-nav-btn next-scene" onclick="window.location.href='Barin.html'" title="ไปโมเดลสมอง">❯</button>
 
-    
     <button id="ar-button" onclick="enterAR()">เข้าโหมด AR</button>
 
     <div id="controls">
@@ -184,8 +196,8 @@
 
     <div id="legend">
         <h3>สีของตัวชี้</h3>
-        <div><span style="background: #d2691e;"></span>เนื้อปอด</div>
-        <div><span style="background: #ffb366;"></span>หลอดลม</div>
+        <div><span style="background: #d2691e;"></span>เนื้อปอด (Lung Tissue)</div>
+        <div><span style="background: #ffb366;"></span>หลอดลม (Airway)</div>
     </div>
 
     <div id="bottom-ui-container">
@@ -200,86 +212,274 @@
 
     <canvas id="marker-canvas"></canvas>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
-    <script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Scene Setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a1a);
+        scene.background = new THREE.Color(0x050505);
         scene.fog = new THREE.Fog(0x0a0a1a, 8, 30);
         
-        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 1.5, 12);
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 16);
         
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.xr.enabled = true;
         document.body.appendChild(renderer.domElement);
-        
+
+        // Advanced Lighting
+        const ambientLight = new THREE.AmbientLight(0x775555, 1.0);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xfff4d2, 4.0);
+        mainLight.position.set(6, 12, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.set(4096, 4096);
+        mainLight.shadow.normalBias = 0.01;
+        mainLight.shadow.bias = -0.0003;
+        scene.add(mainLight);
+
+        const fillLight = new THREE.DirectionalLight(0xffdddd, 2.0);
+        fillLight.position.set(-7, 3, 7);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.SpotLight(0xbbeeff, 7.0, 40, Math.PI / 6, 0.4, 2.0);
+        rimLight.position.set(-12, 6, -6);
+        rimLight.target.position.set(0, 0, 0);
+        scene.add(rimLight);
+        scene.add(rimLight.target);
+
+        const bottomLight = new THREE.PointLight(0xff4444, 1.5, 45);
+        bottomLight.position.set(0, -9, 5);
+        scene.add(bottomLight);
+
+        const backLight = new THREE.PointLight(0xff9999, 1.8, 60);
+        backLight.position.set(0, 4, -12);
+        scene.add(backLight);
+
+        // Hyper-Realistic Texture Generation
+        function createFleshTexture() {
+            const size = 2048;
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size);
+            grad.addColorStop(0, '#903030');
+            grad.addColorStop(1, '#601010');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, size, size);
+
+            for(let i=0; i<300000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(180, 80, 80, 0.05)' : 'rgba(50, 0, 0, 0.05)';
+                ctx.fillRect(Math.random()*size, Math.random()*size, 3, 3);
+            }
+
+            for(let i=0; i<100; i++) {
+                const x = Math.random()*size;
+                const y = Math.random()*size;
+                const r = Math.random()*100 + 50;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(80, 0, 20, 0.1)';
+                ctx.fill();
+            }
+
+            function drawVein(x, y, length, width, angle) {
+                if(width < 0.5) return;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                const endX = x + Math.cos(angle) * length;
+                const endY = y + Math.sin(angle) * length;
+
+                const cp1x = x + Math.cos(angle+0.5) * length/2;
+                const cp1y = y + Math.sin(angle+0.5) * length/2;
+                ctx.quadraticCurveTo(cp1x, cp1y, endX, endY);
+
+                ctx.strokeStyle = 'rgba(80, 20, 20, 0.4)';
+                ctx.lineWidth = width;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                if(Math.random() > 0.2) drawVein(endX, endY, length*0.7, width*0.7, angle + 0.5);
+                if(Math.random() > 0.2) drawVein(endX, endY, length*0.7, width*0.7, angle - 0.5);
+            }
+
+            for(let i=0; i<30; i++) {
+                drawVein(Math.random()*size, Math.random()*size, 150, 4, Math.random()*Math.PI*2);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        const fleshTex = createFleshTexture();
+        document.getElementById('loading').style.display = 'none';
+
+        // Materials
+        const solidMat = new THREE.MeshPhysicalMaterial({
+            color: 0xcc4444,
+            map: fleshTex,
+            bumpMap: fleshTex,
+            bumpScale: 0.05,
+            roughness: 0.22,
+            metalness: 0.0,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.15,
+            sheen: 1.0,
+            sheenColor: 0xffaaaa,
+            transmission: 0.1,
+            side: THREE.DoubleSide
+        });
+
+        const airwayMat = new THREE.MeshPhysicalMaterial({
+            color: 0xe5e0d5,
+            roughness: 0.4,
+            clearcoat: 0.3,
+            bumpMap: fleshTex,
+            bumpScale: 0.01
+        });
+
+        // Geometry Generation
+        function createKidneyLung(material) {
+            const geometry = new THREE.SphereGeometry(2.8, 80, 80);
+            const pos = geometry.attributes.position;
+            const v = new THREE.Vector3();
+
+            for(let i=0; i<pos.count; i++){
+                v.fromBufferAttribute(pos, i);
+
+                const bend = Math.cos(v.y * 0.5) * 0.8; 
+                v.x -= bend; 
+                v.y *= 1.4;
+                v.z *= 0.7;
+                if(v.y > 1.5) v.x *= 0.8;
+                if(v.y < -2.0) v.y += 0.2;
+
+                pos.setXYZ(i, v.x, v.y, v.z);
+            }
+            geometry.computeVertexNormals();
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        function createBronchiTree() {
+            const group = new THREE.Group();
+            
+            function addBranch(start, angle, length, radius, depth) {
+                if (depth > 4) return;
+                const end = new THREE.Vector3(
+                    start.x + Math.cos(angle) * length,
+                    start.y + Math.sin(angle) * length,
+                    start.z
+                );
+                const path = new THREE.LineCurve3(start, end);
+                const geo = new THREE.TubeGeometry(path, 4, radius, 8, false);
+                const mesh = new THREE.Mesh(geo, airwayMat);
+                group.add(mesh);
+
+                for(let i=0; i<2; i++) {
+                    const newAngle = angle + (i===0 ? 0.5 : -0.5) + (Math.random()*0.2);
+                    addBranch(end, newAngle, length*0.7, radius*0.7, depth+1);
+                }
+            }
+            addBranch(new THREE.Vector3(0,0,0), -Math.PI/2 - 0.5, 1.2, 0.25, 0);
+            return group;
+        }
+
+        // Scene Assembly
+        const lungGroup = new THREE.Group();
+
+        const tracheaGeo = new THREE.CylinderGeometry(0.5, 0.5, 3.5, 32, 20);
+        const tPos = tracheaGeo.attributes.position;
+
+        for(let i=0; i<tPos.count; i++){
+            if(tPos.getY(i) % 0.3 > 0.15) { 
+                const scale = 1.08;
+                tPos.setX(i, tPos.getX(i) * scale);
+                tPos.setZ(i, tPos.getZ(i) * scale);
+            }
+        }
+        tracheaGeo.computeVertexNormals();
+
+        const trachea = new THREE.Mesh(tracheaGeo, airwayMat);
+        trachea.position.set(0, 3.5, 0);
+        lungGroup.add(trachea);
+
+        const rightLung = createKidneyLung(solidMat);
+        rightLung.position.set(2.2, 0, 0);
+        rightLung.rotation.z = 0.2;
+        rightLung.scale.x = -1;
+        lungGroup.add(rightLung);
+
+        const leftLungShell = createKidneyLung(solidMat);
+        leftLungShell.position.set(-2.2, 0, 0);
+        leftLungShell.rotation.z = -0.2;
+        lungGroup.add(leftLungShell);
+
+        const bronchi = createBronchiTree();
+        bronchi.position.set(-0.5, 1.5, 0);
+        bronchi.rotation.z = -0.3;
+        lungGroup.add(bronchi);
+
+        const connector = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.5, 32), airwayMat);
+        connector.position.set(-0.8, 2.2, 0);
+        connector.rotation.z = 0.8;
+        lungGroup.add(connector);
+
+        const connector2 = connector.clone();
+        connector2.position.set(0.8, 2.2, 0);
+        connector2.rotation.z = -0.8;
+        lungGroup.add(connector2);
+
+        scene.add(lungGroup);
+        lungGroup.position.y = -1.5;
+
+        // UI State
         const markerCanvas = document.getElementById('marker-canvas');
         const markerCtx = markerCanvas.getContext('2d');
         markerCanvas.width = window.innerWidth;
         markerCanvas.height = window.innerHeight;
-        
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        mainLight.position.set(6, 10, 6);
-        mainLight.castShadow = true;
-        scene.add(mainLight);
-        
-        const fillLight = new THREE.PointLight(0xffffff, 0.8, 50);
-        fillLight.position.set(0, 0, 10);
-        scene.add(fillLight);
-        
-        const lungGroup = new THREE.Group();
-        const lungMaterial = new THREE.MeshStandardMaterial({ color: 0xd2691e, roughness: 0.8, metalness: 0.02 });
-        const airwayMaterial = new THREE.MeshStandardMaterial({ color: 0xffb366, roughness: 0.6 });
-        
-        const llUpper = new THREE.Mesh(new THREE.SphereGeometry(0.8,32,32), lungMaterial);
-        llUpper.scale.set(0.6,0.8,0.5); llUpper.position.set(-2.5,1.5,-0.5);
-        const llLower = new THREE.Mesh(new THREE.SphereGeometry(0.9,32,32), lungMaterial);
-        llLower.scale.set(0.7,1.2,0.6); llLower.position.set(-2.5,-0.5,-0.3);
-        
-        const rlUpper = new THREE.Mesh(new THREE.SphereGeometry(0.7,32,32), lungMaterial);
-        rlUpper.scale.set(0.5,0.7,0.5); rlUpper.position.set(2.5,1.8,-0.5);
-        const rlMiddle = new THREE.Mesh(new THREE.SphereGeometry(0.6,32,32), lungMaterial);
-        rlMiddle.scale.set(0.4,0.6,0.4); rlMiddle.position.set(2.5,0.5,-0.3);
-        const rlLower = new THREE.Mesh(new THREE.SphereGeometry(0.9,32,32), lungMaterial);
-        rlLower.scale.set(0.7,1.1,0.6); rlLower.position.set(2.5,-0.8,-0.2);
-        
-        const trachea = new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,3,32), airwayMaterial);
-        trachea.position.set(0,3.5,-0.5);
-        
-        const lbCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0,2.2,-0.5), new THREE.Vector3(-1,1.5,-0.5), new THREE.Vector3(-2,1,-0.5)]);
-        const leftBronchus = new THREE.Mesh(new THREE.TubeGeometry(lbCurve,16,0.1,8,false), airwayMaterial);
-        
-        const rbCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0,2.2,-0.5), new THREE.Vector3(1,1.5,-0.5), new THREE.Vector3(2,1,-0.5)]);
-        const rightBronchus = new THREE.Mesh(new THREE.TubeGeometry(rbCurve,16,0.1,8,false), airwayMaterial);
-        
-        lungGroup.add(llUpper, llLower, rlUpper, rlMiddle, rlLower, trachea, leftBronchus, rightBronchus);
-        scene.add(lungGroup);
-        
+
+        const fixedLabelPositions = {
+            1: { x: 50, y: 10 }, 2: { x: 20, y: 30 }, 3: { x: 15, y: 50 },
+            4: { x: 80, y: 30 }, 5: { x: 85, y: 45 }, 6: { x: 85, y: 60 },
+            7: { x: 35, y: 25 }, 8: { x: 65, y: 25 }
+        };
+
         const markerData = [
-            { id: 1, name: "Trachea", pos: { x: 0, y: 3.5, z: -0.5 }, color: "#ffb366", type: "airway", desc: "หลอดลม ทางเดินหายใจหลักจากคอลงมายังปอด มีกระดูกอ่อนเป็นวงๆ ป้องกันยุบตัว" },
-            { id: 2, name: "Left Lung Upper", pos: { x: -2.5, y: 1.5, z: -0.5 }, color: "#d2691e", type: "lung", desc: "ปอดซ้ายส่วนบน (LUL) มี 2 กลีบ รับออกซิเจนจากคาร์บอนไดออกไซด์จากหัวใจ" },
-            { id: 3, name: "Left Lung Lower", pos: { x: -2.5, y: -0.5, z: -0.3 }, color: "#d2691e", type: "lung", desc: "ปอดซ้ายส่วนล่าง (LLL) ใหญ่กว่าส่วนบน มี cardiac impression จากการสัมผัสหัวใจ" },
-            { id: 4, name: "Right Lung Upper", pos: { x: 2.5, y: 1.8, z: -0.5 }, color: "#d2691e", type: "lung", desc: "ปอดขวาส่วนบน (RUL) มี 3 กลีบทั้งหมด" },
-            { id: 5, name: "Right Lung Middle", pos: { x: 2.5, y: 0.5, z: -0.3 }, color: "#d2691e", type: "lung", desc: "ปอดขวาส่วนกลาง (RML) กลีบเล็กที่สุด ตั้งอยู่ระหว่างกลีบบนและล่าง" },
-            { id: 6, name: "Right Lung Lower", pos: { x: 2.5, y: -0.8, z: -0.2 }, color: "#d2691e", type: "lung", desc: "ปอดขวาส่วนล่าง (RLL) ใหญ่ที่สุด มีพื้นผิวสัมผัสกับไดอะแฟรม" },
-            { id: 7, name: "Left Bronchus", pos: { x: -1.5, y: 1.2, z: -0.5 }, color: "#ffb366", type: "airway", desc: "หลอดลมซ้าย แตกแขนงไปยังปอดซ้าย ยาวและแคบกว่าขวา มุมแหลมกว่า" },
-            { id: 8, name: "Right Bronchus", pos: { x: 1.5, y: 1.2, z: -0.5 }, color: "#ffb366", type: "airway", desc: "หลอดลมขวา สั้นและกว้างกว่า มุมไม่แหลม มักมีสิ่งแปลกปลอมตกลงไปได้ง่าย" }
+            { id: 1, name: "Trachea", pos: { x: 0, y: 3.5, z: 0 }, color: "#ffb366", type: "airway", desc: "หลอดลม ทางเดินหายใจหลักจากคอลงมายังปอด มีกระดูกอ่อนเป็นวงๆ ป้องกันยุบตัว" },
+            { id: 2, name: "Left Lung Upper", pos: { x: -2.2, y: 1.5, z: 0 }, color: "#d2691e", type: "lung", desc: "ปอดซ้ายส่วนบน (LUL) มี 2 กลีบ รับออกซิเจนจากคาร์บอนไดออกไซด์จากหัวใจ" },
+            { id: 3, name: "Left Lung Lower", pos: { x: -2.2, y: -0.5, z: 0 }, color: "#d2691e", type: "lung", desc: "ปอดซ้ายส่วนล่าง (LLL) ใหญ่กว่าส่วนบน มี cardiac impression จากการสัมผัสหัวใจ" },
+            { id: 4, name: "Right Lung Upper", pos: { x: 2.2, y: 1.8, z: 0 }, color: "#d2691e", type: "lung", desc: "ปอดขวาส่วนบน (RUL) มี 3 กลีบทั้งหมด" },
+            { id: 5, name: "Right Lung Middle", pos: { x: 2.2, y: 0.5, z: 0 }, color: "#d2691e", type: "lung", desc: "ปอดขวาส่วนกลาง (RML) กลีบเล็กที่สุด ตั้งอยู่ระหว่างกลีบบนและล่าง" },
+            { id: 6, name: "Right Lung Lower", pos: { x: 2.2, y: -0.8, z: 0 }, color: "#d2691e", type: "lung", desc: "ปอดขวาส่วนล่าง (RLL) ใหญ่ที่สุด มีพื้นผิวสัมผัสกับไดอะแฟรม" },
+            { id: 7, name: "Left Bronchus", pos: { x: -1.5, y: 1.2, z: 0 }, color: "#ffb366", type: "airway", desc: "หลอดลมซ้าย แตกแขนงไปยังปอดซ้าย ยาวและแคบกว่าขวา มุมแหลมกว่า" },
+            { id: 8, name: "Right Bronchus", pos: { x: 1.5, y: 1.2, z: 0 }, color: "#ffb366", type: "airway", desc: "หลอดลมขวา สั้นและกว้างกว่า มักมีสิ่งแปลกปลอมตกลงไปได้ง่าย" }
         ];
 
-        let showLabels = true;
-        let activeMarker = null;
-        let currentMarkerIndex = -1;
-        let isARMode = false;
-        let autoHideTimer = null;
-        let uiVisible = true;
+        let showLabels = true, activeMarker = null, currentMarkerIndex = -1;
+        let isARMode = false, autoHideTimer = null, uiVisible = true, rotating = true;
         const markerElements = {};
         
         markerData.forEach((data, index) => {
@@ -293,12 +493,7 @@
             container.style.display = 'none';
             document.body.appendChild(container);
             
-            const fixedPos = {
-                1: { x: 50, y: 10 }, 2: { x: 20, y: 30 }, 3: { x: 15, y: 50 },
-                4: { x: 80, y: 30 }, 5: { x: 85, y: 45 }, 6: { x: 85, y: 60 },
-                7: { x: 35, y: 25 }, 8: { x: 65, y: 25 }
-            }[data.id];
-            
+            const fixedPos = fixedLabelPositions[data.id];
             container.style.left = `${fixedPos.x}%`;
             container.style.top = `${fixedPos.y}%`;
             container.style.transform = 'translate(-50%, -50%)';
@@ -306,7 +501,17 @@
             container.addEventListener('click', () => selectMarkerByIndex(index));
         });
 
-        // --- Marker Navigation (เลื่อนตัวหนังสือ วนลูป) ---
+        function isMobile() {
+            return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        function adjustForMobile() {
+            if (isMobile()) {
+                lungGroup.scale.set(0.7, 0.7, 0.7);
+                camera.position.set(0, 0, 20);
+            }
+        }
+
         function navigateMarker(direction) {
             let newIndex = currentMarkerIndex + direction;
             if (newIndex < 0) newIndex = markerData.length - 1;
@@ -347,11 +552,6 @@
             return labels[type] || 'อื่นๆ';
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') navigateMarker(1);
-            if (e.key === 'ArrowLeft') navigateMarker(-1);
-        });
-
         function updateMarkers() {
             markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
             if (!showLabels) {
@@ -366,16 +566,10 @@
                     markerElements[data.id].container.style.display = 'none';
                     return;
                 }
-                const endX = (vector.x * 0.5 + 0.5) * window.innerWidth;
-                const endY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-                
-                const fixedPos = { 1: {x:50,y:10}, 2: {x:20,y:30}, 3: {x:15,y:50}, 4: {x:80,y:30}, 5: {x:85,y:45}, 6: {x:85,y:60}, 7: {x:35,y:25}, 8: {x:65,y:25} }[data.id];
-                const startX = (fixedPos.x/100)*window.innerWidth;
-                const startY = (fixedPos.y/100)*window.innerHeight;
-
-                const worldPos = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
-                worldPos.applyMatrix4(lungGroup.matrixWorld);
-                const distance = camera.position.distanceTo(worldPos);
+                const [endX, endY] = [(vector.x * 0.5 + 0.5) * window.innerWidth, (-vector.y * 0.5 + 0.5) * window.innerHeight];
+                const fixedPos = fixedLabelPositions[data.id];
+                const [startX, startY] = [(fixedPos.x / 100) * window.innerWidth, (fixedPos.y / 100) * window.innerHeight];
+                const distance = camera.position.distanceTo(vector.applyMatrix4(lungGroup.matrixWorld));
 
                 markerCtx.strokeStyle = data.color;
                 markerCtx.lineWidth = 3;
@@ -391,8 +585,11 @@
 
         function autoHideUI() {
             clearTimeout(autoHideTimer);
-            autoHideTimer = setTimeout(() => { if (!isARMode) hideUI(); }, 5000);
+            autoHideTimer = setTimeout(() => {
+                if (!isARMode && !isMobile()) hideUI();
+            }, 5000);
         }
+
         function hideUI() {
             uiVisible = false;
             document.getElementById('info').classList.add('hidden');
@@ -401,6 +598,7 @@
             document.getElementById('bottom-ui-container').classList.add('hidden');
             document.querySelectorAll('.scene-nav-btn').forEach(b => b.classList.add('hidden'));
         }
+
         function showUI() {
             uiVisible = true;
             document.getElementById('info').classList.remove('hidden');
@@ -409,49 +607,85 @@
             document.getElementById('bottom-ui-container').classList.remove('hidden');
             document.querySelectorAll('.scene-nav-btn').forEach(b => b.classList.remove('hidden'));
         }
+
         function resetAutoHide() {
             clearTimeout(autoHideTimer);
             if (!uiVisible) showUI();
             autoHideUI();
         }
 
-        async function checkARSupport() { if ('xr' in navigator) { try { const s = await navigator.xr.isSessionSupported('immersive-ar'); if(s) document.getElementById('ar-button').style.display='block'; } catch(e){} } }
+        async function checkARSupport() { 
+            if ('xr' in navigator) { 
+                try { 
+                    const s = await navigator.xr.isSessionSupported('immersive-ar'); 
+                    if(s) document.getElementById('ar-button').style.display='block'; 
+                } catch(e){} 
+            } 
+        }
         checkARSupport();
+
         async function enterAR() {
             if (!navigator.xr) return;
             const session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] });
-            renderer.xr.setSession(session); isARMode = true; rotating = false;
-            lungGroup.scale.set(0.15,0.15,0.15); lungGroup.position.set(0,0,-1);
-            document.getElementById('info').style.display='none'; document.getElementById('legend').style.display='none';
+            renderer.xr.setSession(session); 
+            isARMode = true;
+            rotating = false;
+            lungGroup.scale.set(0.15, 0.15, 0.15); 
+            lungGroup.position.set(0, 0, -1);
+            document.getElementById('info').style.display='none'; 
+            document.getElementById('legend').style.display='none';
             document.querySelectorAll('.scene-nav-btn').forEach(b => b.style.display='none');
             session.addEventListener('end', () => { 
-                isARMode=false; lungGroup.scale.set(1,1,1); lungGroup.position.set(0,0,0); 
-                document.getElementById('info').style.display='block'; document.getElementById('legend').style.display='block';
+                isARMode=false; 
+                lungGroup.scale.set(1, 1, 1); 
+                lungGroup.position.set(0, -1.5, 0);
+                document.getElementById('info').style.display='block'; 
+                document.getElementById('legend').style.display='block';
                 document.querySelectorAll('.scene-nav-btn').forEach(b => b.style.display='block');
+                adjustForMobile();
             });
         }
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        let time = 0; let rotating = true;
-        ['click','touchstart','mousemove'].forEach(e => document.addEventListener(e, resetAutoHide));
-        window.toggleRotation = () => { rotating = !rotating; resetAutoHide(); };
+        
+        const clock = new THREE.Clock();
+
         window.resetView = () => { 
-            camera.position.set(0,1.5,12); controls.reset(); currentMarkerIndex = -1;
-            document.getElementById('info-panel').innerHTML = `<h2>ปอดมนุษย์</h2><p>คลิกที่ลูกศรซ้าย-ขวา เพื่อดูข้อมูล</p>`;
+            camera.position.set(0, 0, isMobile() ? 20 : 16);
+            controls.reset(); 
+            currentMarkerIndex = -1;
+            document.getElementById('info-panel').innerHTML = `
+                <h2>ปอดมนุษย์</h2>
+                <p>คลิกที่ลูกศรซ้าย-ขวา เพื่อดูข้อมูล</p>
+                <p style="color: #888; font-size: 12px;">* มีจุดทั้งหมด 8 จุด</p>
+            `;
             Object.values(markerElements).forEach(el => el.container.style.filter='brightness(1)');
+            adjustForMobile();
             resetAutoHide(); 
         };
+        
+        window.toggleRotation = () => { rotating = !rotating; resetAutoHide(); };
         window.toggleLabels = () => { showLabels = !showLabels; resetAutoHide(); };
         window.enterAR = enterAR;
 
+        ['click', 'touchstart', 'touchmove', 'mousemove'].forEach(e => {
+            document.addEventListener(e, resetAutoHide);
+        });
+
         function animate() {
             requestAnimationFrame(animate);
-            time += 0.01;
-            const beat = Math.sin(time * 2) * 0.3 + 0.7;
-            const scale = isARMode ? 0.15 : (1.0 + (beat * 0.02));
-            lungGroup.scale.set(scale, scale, scale);
+            const time = clock.getElapsedTime();
+
+            // Breathing animation
+            const breath = 1 + Math.sin(time * 2) * 0.02;
+            if (!isARMode) {
+                lungGroup.scale.set(breath, breath * 1.01, breath);
+                lungGroup.rotation.y = Math.sin(time * 0.1) * 0.05;
+            }
+
             if(rotating && !isARMode) lungGroup.rotation.y += 0.003;
+            
             controls.update();
             renderer.render(scene, camera);
             updateMarkers();
@@ -463,12 +697,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             markerCanvas.width = window.innerWidth;
             markerCanvas.height = window.innerHeight;
+            adjustForMobile();
         });
 
+        adjustForMobile();
         selectMarkerByIndex(0);
         animate();
     </script>
 </body>
 </html>
-
-
