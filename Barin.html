@@ -312,7 +312,7 @@
             text-align: center;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400  ;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Loading Screen -->
@@ -351,10 +351,10 @@
         </div>
         
         <div id="controls-section" class="ui-card">
-            <button class="control-btn" id="gyro-btn" onclick="toggleGyro()">เปิดใช้ Gyroscope</button>
-            <button class="control-btn" onclick="resetCamera()">📍 รีเซ็ตมุมมอง</button>
-            <button class="control-btn" onclick="toggleAutoRotate()">🎬 หมุนอัตโนมัติ</button>
-            <button class="control-btn" onclick="showHelp()">❓ วิธีใช้</button>
+            <button class="control-btn" id="gyro-btn" onclick="toggleGyro()">open Gyroscope</button>
+            <button class="control-btn" onclick="resetCamera()">Reset view</button>
+            <button class="control-btn" onclick="toggleAutoRotate()">Auto rotate</button>
+            <button class="control-btn" onclick="showHelp()">Help</button>
         </div>
     </div>
     
@@ -405,7 +405,7 @@
         let isGyroCalibrated = false;
         let autoRotate = false;
         let scene, camera, renderer, controls, brainGroup, markers = [], markerData = [];
-        let lastTime = 0;
+        let animationTimestamp = 0;
 
         // ===== SCENE SETUP =====
         scene = new THREE.Scene();
@@ -421,7 +421,7 @@
             powerPreference: "high-performance"
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile() ? 1.5 : 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobileDevice() ? 1.5 : 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.4;
         renderer.shadowMap.enabled = true;
@@ -429,27 +429,39 @@
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
         
-        // ===== HIGH-QUALITY LIGHTING =====
-        const lighting = {
+        // ===== HIGH-QUALITY LIGHTING SETUP =====
+        const lightingConfig = {
             ambient: new THREE.AmbientLight(0xffffff, 0.4),
-            main: new THREE.DirectionalLight(0xffffff, 2.5),
-            rim: new THREE.SpotLight(0xffcccc, 4.5, 60, Math.PI / 4, 0.5),
-            fill: new THREE.PointLight(0xff8888, 1.5, 100),
-            accent: new THREE.PointLight(0xffaaaa, 1.0, 100)
+            mainDirectional: new THREE.DirectionalLight(0xffffff, 2.5),
+            rimSpot: new THREE.SpotLight(0xffcccc, 4.5, 60, Math.PI / 4, 0.5),
+            fillPoint: new THREE.PointLight(0xff8888, 1.5, 100),
+            accentPoint: new THREE.PointLight(0xffaaaa, 1.0, 100)
         };
         
-        lighting.main.position.set(-8, 12, 8);
-        lighting.main.castShadow = true;
-        lighting.main.shadow.mapSize.set(2048, 2048);
-        lighting.rim.position.set(0, 0, -25);
-        lighting.fill.position.set(8, -3, 5);
-        lighting.accent.position.set(-5, 3, 6);
-        Object.values(lighting).forEach(light => scene.add(light));
+        lightingConfig.mainDirectional.position.set(-8, 12, 8);
+        lightingConfig.mainDirectional.castShadow = true;
+        lightingConfig.mainDirectional.shadow.mapSize.set(2048, 2048);
+        lightingConfig.rimSpot.position.set(0, 0, -25);
+        lightingConfig.fillPoint.position.set(8, -3, 5);
+        lightingConfig.accentPoint.position.set(-5, 3, 6);
+        Object.values(lightingConfig).forEach(light => scene.add(light));
         
-        // ===== 🔥 REALISTIC BRAIN COLORS =====
-        const materials = {
+        // ===== REALISTIC BRAIN COLOR PALETTE =====
+        // 🧠 สีที่สมจริงตามเนื้อเยื่อสมองจริง
+        const realisticBrainColors = {
+            cortexRidge: new THREE.Color(0xE8C4C4),  // สีชมพูอมเทา (ยอดร่องสมอง)
+            cortexValley: new THREE.Color(0xB89595), // สีชมพูเข้ม (ก้นร่องสมอง)
+            cerebellum: new THREE.Color(0xD4A5A5),   // สมองน้อย - ออกเทาอมชมพู
+            brainstem: new THREE.Color(0x9B6B6B),    // สมองส่วนล่าง - น้ำตาลอมแดง
+            marker: 0xFF3333,                        // มาร์กเกอร์สีแดงสด
+            markerRing: 0xFF3333,
+            connectionLine: 0xE8C4C4
+        };
+        
+        // ===== MATERIAL DEFINITIONS =====
+        const brainMaterials = {
             cortex: new THREE.MeshPhysicalMaterial({
-                color: 0xffd0d0,  // 🧠 สีชมพูอ่อน (Cortex สมองจริง)
+                color: realisticBrainColors.cortexRidge,
                 roughness: 0.12,
                 metalness: 0.02,
                 clearcoat: 1.0,
@@ -460,167 +472,170 @@
                 side: THREE.DoubleSide
             }),
             cerebellum: new THREE.MeshPhysicalMaterial({
-                color: 0xffc0c0,  // 🧠 สีชมพูอ่อน (Cerebellum)
+                color: realisticBrainColors.cerebellum,
                 roughness: 0.15,
                 clearcoat: 0.9,
                 side: THREE.DoubleSide
             }),
             brainstem: new THREE.MeshPhysicalMaterial({
-                color: 0xffa0a0,  // 🧠 สีชมพูเข้มขึ้น (Brainstem)
+                color: realisticBrainColors.brainstem,
                 roughness: 0.18,
                 clearcoat: 0.7,
                 side: THREE.DoubleSide
             }),
             marker: new THREE.MeshBasicMaterial({
-                color: 0xff4444,  // 🔴 สีแดงสดสำหรับมาร์กเกอร์
+                color: realisticBrainColors.marker,
                 transparent: true,
                 opacity: 0.95
             }),
             markerRing: new THREE.MeshBasicMaterial({
-                color: 0xff4444,
+                color: realisticBrainColors.markerRing,
                 transparent: true,
                 opacity: 0.7
             }),
             connectionLine: new THREE.LineBasicMaterial({
-                color: 0xffaaaa,  // เส้นเชื่อมสีชมพูอ่อน
+                color: realisticBrainColors.connectionLine,
                 transparent: true,
                 opacity: 0.6
             })
         };
         
-        // ===== PROCEDURAL BRAIN GENERATION =====
-        const simplex = new SimplexNoise();
-        brainGroup = new THREE.Group();
-        
-        const CONFIG = {
-            resolution: isMobile() ? 220 : 360,
-            colorRidge: new THREE.Color(0xffe0e0).convertSRGBToLinear(),  // สียอดร่องสมอง
-            colorValley: new THREE.Color(0xffa0a0).convertSRGBToLinear(), // สีก้นร่องสมอง
-            roughness: 0.12,
-            metalness: 0.02,
-            clearcoat: 1.0,
-            hemisphereGap: 0.12,
+        // ===== PROCEDURAL BRAIN GENERATION PARAMETERS =====
+        const brainGenerationParams = {
+            vertexResolution: isMobileDevice() ? 220 : 360,
             noiseScale: 2.2,
-            displacement: 0.25
+            displacementStrength: 0.25,
+            hemisphereGap: 0.12,
+            ridgeColor: realisticBrainColors.cortexRidge.clone().convertSRGBToLinear(),
+            valleyColor: realisticBrainColors.cortexValley.clone().convertSRGBToLinear()
         };
         
-        function createCerebrumPart(isRight, mat) {
-            const geo = new THREE.SphereGeometry(1.2, CONFIG.resolution, CONFIG.resolution);
-            const pos = geo.attributes.position;
-            const count = pos.count;
-            const vec = new THREE.Vector3();
-            const colors = new Float32Array(count * 3);
-            const colTemp = new THREE.Color();
+        const noiseGenerator = new SimplexNoise();
+        brainGroup = new THREE.Group();
+        
+        // ===== BRAIN MESH GENERATION FUNCTIONS =====
+        function createCerebrumHemisphere(isRightSide, material) {
+            const geometry = new THREE.SphereGeometry(1.2, brainGenerationParams.vertexResolution, brainGenerationParams.vertexResolution);
+            const positionAttribute = geometry.attributes.position;
+            const vertexCount = positionAttribute.count;
+            const vector = new THREE.Vector3();
+            const colorArray = new Float32Array(vertexCount * 3);
+            const tempColor = new THREE.Color();
 
-            for (let i = 0; i < count; i++) {
-                vec.fromBufferAttribute(pos, i);
-                vec.x *= 0.85; vec.z *= 1.3;
-                if (vec.y < -0.3) vec.y = -0.3 + (vec.y + 0.3) * 0.4;
+            for (let i = 0; i < vertexCount; i++) {
+                vector.fromBufferAttribute(positionAttribute, i);
+                vector.x *= 0.85; vector.z *= 1.3;
+                if (vector.y < -0.3) vector.y = -0.3 + (vector.y + 0.3) * 0.4;
                 
-                if (isRight) {
-                    if (vec.x < 0) vec.x *= 0.1;
-                    vec.x += CONFIG.hemisphereGap / 2;
+                if (isRightSide) {
+                    if (vector.x < 0) vector.x *= 0.1;
+                    vector.x += brainGenerationParams.hemisphereGap / 2;
                 } else {
-                    if (vec.x > 0) vec.x *= 0.1;
-                    vec.x -= CONFIG.hemisphereGap / 2;
+                    if (vector.x > 0) vector.x *= 0.1;
+                    vector.x -= brainGenerationParams.hemisphereGap / 2;
                 }
 
-                let nx = vec.x * CONFIG.noiseScale;
-                let ny = vec.y * CONFIG.noiseScale;
-                let nz = vec.z * CONFIG.noiseScale;
+                let noiseX = vector.x * brainGenerationParams.noiseScale;
+                let noiseY = vector.y * brainGenerationParams.noiseScale;
+                let noiseZ = vector.z * brainGenerationParams.noiseScale;
                 
-                let warp = simplex.noise(nx, ny, nz) * 0.6;
-                let n1 = simplex.noise(nx + warp, ny + warp, nz);
-                let n2 = simplex.noise(nx*4, ny*4, nz*4) * 0.12;
+                let warp = noiseGenerator.noise(noiseX, noiseY, noiseZ) * 0.6;
+                let noise1 = noiseGenerator.noise(noiseX + warp, noiseY + warp, noiseZ);
+                let noise2 = noiseGenerator.noise(noiseX*4, noiseY*4, noiseZ*4) * 0.12;
                 
-                let noiseVal = n1 + n2;
-                let ridge = 1.0 - Math.abs(noiseVal);
-                ridge = Math.pow(ridge, 1.3);
+                let noiseValue = noise1 + noise2;
+                let ridgeFactor = 1.0 - Math.abs(noiseValue);
+                ridgeFactor = Math.pow(ridgeFactor, 1.3);
                 
-                let distFromMid = Math.abs(isRight ? vec.x - 0.06 : vec.x + 0.06);
-                if (distFromMid < 0.25) ridge *= (distFromMid * 4);
+                let distFromMid = Math.abs(isRightSide ? vector.x - 0.06 : vector.x + 0.06);
+                if (distFromMid < 0.25) ridgeFactor *= (distFromMid * 4);
 
-                let displacement = ridge * CONFIG.displacement;
-                let normal = vec.clone().normalize();
-                if (Math.abs(vec.x) < 0.1) displacement *= 0.2;
-                vec.add(normal.multiplyScalar(displacement));
+                let displacement = ridgeFactor * brainGenerationParams.displacementStrength;
+                let normal = vector.clone().normalize();
+                if (Math.abs(vector.x) < 0.1) displacement *= 0.2;
+                vector.add(normal.multiplyScalar(displacement));
 
-                colTemp.copy(CONFIG.colorValley).lerp(CONFIG.colorRidge, ridge * ridge);
-                colors[i*3] = colTemp.r;
-                colors[i*3+1] = colTemp.g;
-                colors[i*3+2] = colTemp.b;
+                tempColor.copy(brainGenerationParams.valleyColor).lerp(brainGenerationParams.ridgeColor, ridgeFactor * ridgeFactor);
+                colorArray[i*3] = tempColor.r;
+                colorArray[i*3+1] = tempColor.g;
+                colorArray[i*3+2] = tempColor.b;
 
-                pos.setXYZ(i, vec.x, vec.y, vec.z);
+                positionAttribute.setXYZ(i, vector.x, vector.y, vector.z);
             }
 
-            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            geo.computeVertexNormals();
-            const mesh = new THREE.Mesh(geo, mat);
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+            geometry.computeVertexNormals();
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.castShadow = true;
             mesh.receiveShadow = true;
             return mesh;
         }
 
-        function createCerebellum(mat) {
-            const geo = new THREE.SphereGeometry(0.7, CONFIG.resolution, CONFIG.resolution);
-            const pos = geo.attributes.position;
-            const vec = new THREE.Vector3();
-            const colors = new Float32Array(pos.count * 3);
-            const colTemp = new THREE.Color();
+        function createCerebellumSection(material) {
+            const geometry = new THREE.SphereGeometry(0.7, brainGenerationParams.vertexResolution, brainGenerationParams.vertexResolution);
+            const positionAttribute = geometry.attributes.position;
+            const vector = new THREE.Vector3();
+            const colorArray = new Float32Array(positionAttribute.count * 3);
+            const tempColor = new THREE.Color();
 
-            for(let i=0; i<pos.count; i++) {
-                vec.fromBufferAttribute(pos, i);
-                vec.y *= 0.6; vec.x *= 1.4;
-                let freq = 35.0;
-                let stripe = Math.sin(vec.y * freq + vec.z * 10);
-                let disp = (stripe + 1.0) * 0.025;
-                vec.add(vec.clone().normalize().multiplyScalar(disp));
-                let mix = (stripe + 1) / 2;
-                colTemp.copy(CONFIG.colorValley).lerp(CONFIG.colorRidge, mix);
-                colors[i*3] = colTemp.r; colors[i*3+1] = colTemp.g; colors[i*3+2] = colTemp.b;
-                pos.setXYZ(i, vec.x, vec.y, vec.z);
+            for(let i = 0; i < positionAttribute.count; i++) {
+                vector.fromBufferAttribute(positionAttribute, i);
+                vector.y *= 0.6; vector.x *= 1.4;
+                let frequency = 35.0;
+                let stripePattern = Math.sin(vector.y * frequency + vector.z * 10);
+                let displacement = (stripePattern + 1.0) * 0.025;
+                vector.add(vector.clone().normalize().multiplyScalar(displacement));
+                
+                let mixFactor = (stripePattern + 1) / 2;
+                tempColor.copy(brainGenerationParams.valleyColor).lerp(brainGenerationParams.ridgeColor, mixFactor);
+                colorArray[i*3] = tempColor.r;
+                colorArray[i*3+1] = tempColor.g;
+                colorArray[i*3+2] = tempColor.b;
+                
+                positionAttribute.setXYZ(i, vector.x, vector.y, vector.z);
             }
-            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            geo.computeVertexNormals();
-            const m = new THREE.Mesh(geo, mat);
-            m.position.set(0, -0.65, -0.9);
-            m.rotation.x = -0.2;
-            m.castShadow = true;
-            m.receiveShadow = true;
-            return m;
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+            geometry.computeVertexNormals();
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(0, -0.65, -0.9);
+            mesh.rotation.x = -0.2;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
         }
 
-        function createBrainStem(mat) {
-            const geo = new THREE.CylinderGeometry(0.35, 0.22, 1.8, 64, 20);
-            const pos = geo.attributes.position;
-            const colors = new Float32Array(pos.count * 3);
-            const vec = new THREE.Vector3();
+        function createBrainStemSection(material) {
+            const geometry = new THREE.CylinderGeometry(0.35, 0.22, 1.8, 64, 20);
+            const positionAttribute = geometry.attributes.position;
+            const colorArray = new Float32Array(positionAttribute.count * 3);
+            const vector = new THREE.Vector3();
 
-            for(let i=0; i<pos.count; i++){
-                vec.fromBufferAttribute(pos, i);
-                vec.z += Math.pow(vec.y, 2) * 0.1;
-                pos.setXYZ(i, vec.x, vec.y, vec.z);
-                colors[i*3] = CONFIG.colorRidge.r;
-                colors[i*3+1] = CONFIG.colorRidge.g;
-                colors[i*3+2] = CONFIG.colorRidge.b;
+            for(let i = 0; i < positionAttribute.count; i++){
+                vector.fromBufferAttribute(positionAttribute, i);
+                vector.z += Math.pow(vector.y, 2) * 0.1;
+                positionAttribute.setXYZ(i, vector.x, vector.y, vector.z);
+                colorArray[i*3] = brainGenerationParams.ridgeColor.r;
+                colorArray[i*3+1] = brainGenerationParams.ridgeColor.g;
+                colorArray[i*3+2] = brainGenerationParams.ridgeColor.b;
             }
-            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-            geo.computeVertexNormals();
-            const m = new THREE.Mesh(geo, mat);
-            m.position.set(0, -1.4, -0.3);
-            m.rotation.x = 0.2;
-            m.receiveShadow = true;
-            return m;
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+            geometry.computeVertexNormals();
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(0, -1.4, -0.3);
+            mesh.rotation.x = 0.2;
+            mesh.receiveShadow = true;
+            return mesh;
         }
         
-        // Build brain
-        const leftHemi = createCerebrumPart(false, materials.cortex);
-        const rightHemi = createCerebrumPart(true, materials.cortex);
-        const cerebellum = createCerebellum(materials.cerebellum);
-        const stem = createBrainStem(materials.brainstem);
-        brainGroup.add(leftHemi, rightHemi, cerebellum, stem);
+        // ===== BRAIN ASSEMBLY =====
+        const leftHemisphere = createCerebrumHemisphere(false, brainMaterials.cortex);
+        const rightHemisphere = createCerebrumHemisphere(true, brainMaterials.cortex);
+        const cerebellumMesh = createCerebellumSection(brainMaterials.cerebellum);
+        const brainstemMesh = createBrainStemSection(brainMaterials.brainstem);
+        
+        brainGroup.add(leftHemisphere, rightHemisphere, cerebellumMesh, brainstemMesh);
         brainGroup.rotation.x = 0.2;
-        brainGroup.scale.setScalar(isMobile() ? 0.85 : 1);
+        brainGroup.scale.setScalar(isMobileDevice() ? 0.85 : 1);
         scene.add(brainGroup);
         
         // ===== MARKER SYSTEM =====
@@ -640,30 +655,30 @@
         ];
         
         markerData.forEach((data, index) => {
-            const markerGeo = new THREE.SphereGeometry(0.08, 16, 16);
-            const markerMesh = new THREE.Mesh(markerGeo, materials.marker);
+            const markerGeometry = new THREE.SphereGeometry(0.08, 16, 16);
+            const markerMesh = new THREE.Mesh(markerGeometry, brainMaterials.marker);
             markerMesh.position.copy(data.pos);
             markerMesh.userData = { id: data.id, index, type: 'marker' };
             
-            const ringGeo = new THREE.TorusGeometry(0.12, 0.02, 8, 16);
-            const ringMesh = new THREE.Mesh(ringGeo, materials.markerRing);
+            const ringGeometry = new THREE.TorusGeometry(0.12, 0.02, 8, 16);
+            const ringMesh = new THREE.Mesh(ringGeometry, brainMaterials.markerRing);
             ringMesh.position.copy(data.pos);
             
             const surfacePoint = data.pos.clone().multiplyScalar(0.85);
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([data.pos, surfacePoint]);
-            const lineMesh = new THREE.Line(lineGeo, materials.connectionLine);
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints([data.pos, surfacePoint]);
+            const lineMesh = new THREE.Line(lineGeometry, brainMaterials.connectionLine);
             
-            const arrowGeo = new THREE.ConeGeometry(0.04, 0.15, 8);
-            const arrowMesh = new THREE.Mesh(arrowGeo, materials.marker);
-            const arrowPos = data.pos.clone().multiplyScalar(0.88);
-            arrowMesh.position.copy(arrowPos);
+            const arrowGeometry = new THREE.ConeGeometry(0.04, 0.15, 8);
+            const arrowMesh = new THREE.Mesh(arrowGeometry, brainMaterials.marker);
+            const arrowPosition = data.pos.clone().multiplyScalar(0.88);
+            arrowMesh.position.copy(arrowPosition);
             arrowMesh.lookAt(surfacePoint);
             
             brainGroup.add(markerMesh, ringMesh, lineMesh, arrowMesh);
             markers.push({ mesh: markerMesh, ring: ringMesh, line: lineMesh, arrow: arrowMesh, data });
         });
         
-        // ===== CONTROLS =====
+        // ===== CAMERA CONTROLS =====
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
@@ -674,39 +689,39 @@
         controls.autoRotateSpeed = 0.4;
         controls.enabled = false;
         
-        // ===== RAYCASTING =====
+        // ===== RAYCASTING FOR INTERACTION =====
         const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        const mouseCoordinates = new THREE.Vector2();
         
-        renderer.domElement.addEventListener('click', onInteraction);
-        renderer.domElement.addEventListener('touchstart', onTouchInteraction);
+        renderer.domElement.addEventListener('click', handleInteraction);
+        renderer.domElement.addEventListener('touchstart', handleTouchInteraction);
         
-        function onInteraction(event) {
+        function handleInteraction(event) {
             if (isLocked || gyroMode) return;
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            mouseCoordinates.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseCoordinates.y = -(event.clientY / window.innerHeight) * 2 + 1;
             checkMarkerInteraction();
         }
         
-        function onTouchInteraction(event) {
+        function handleTouchInteraction(event) {
             if (isLocked || gyroMode || !event.touches.length) return;
-            mouse.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
+            mouseCoordinates.x = (event.touches[0].clientX / window.innerWidth) * 2 - 1;
+            mouseCoordinates.y = -(event.touches[0].clientY / window.innerHeight) * 2 + 1;
             checkMarkerInteraction();
         }
         
         function checkMarkerInteraction() {
-            raycaster.setFromCamera(mouse, camera);
+            raycaster.setFromCamera(mouseCoordinates, camera);
             const markerMeshes = markers.map(m => m.mesh);
-            const intersects = raycaster.intersectObjects(markerMeshes);
+            const intersections = raycaster.intersectObjects(markerMeshes);
             
-            if (intersects.length > 0) {
-                const index = intersects[0].object.userData.index;
-                selectMarker(index);
+            if (intersections.length > 0) {
+                const targetIndex = intersections[0].object.userData.index;
+                selectMarker(targetIndex);
             }
         }
         
-        // ===== GLOBAL FUNCTIONS =====
+        // ===== USER INTERFACE FUNCTIONS =====
         window.startExperience = function() {
             isLocked = false;
             controls.enabled = true;
@@ -717,7 +732,7 @@
         
         window.toggleGyro = async function() {
             if (isLocked) {
-                showError('กรุณาเริ่มใช้งานก่อน');
+                showErrorMessage('กรุณาเริ่มใช้งานก่อน');
                 return;
             }
             
@@ -726,7 +741,7 @@
                     try {
                         const permission = await DeviceOrientationEvent.requestPermission();
                         if (permission !== 'granted') {
-                            showError('ต้องได้รับอนุญาตเข้าถึง Gyroscope');
+                            showErrorMessage('ต้องได้รับอนุญาตเข้าถึง Gyroscope');
                             return;
                         }
                     } catch { return; }
@@ -739,14 +754,14 @@
                 document.getElementById('gyro-fab').classList.add('active');
                 updateModeStatus('โหมด Gyroscope - รอการคาลิเบรท');
             } else {
-                deactivateGyro();
+                deactivateGyroscope();
             }
         };
         
         window.completeGyroCal = function() {
             document.getElementById('gyro-calib-ui').style.display = 'none';
             isGyroCalibrated = false;
-            window.addEventListener('deviceorientation', handleGyro, { passive: true });
+            window.addEventListener('deviceorientation', handleGyroscope, { passive: true });
             showInfoPanel();
             document.getElementById('info-title').textContent = '🔄 Gyroscope พร้อมใช้งาน';
             document.getElementById('info-desc').textContent = 'หมุนอุปกรณ์ของคุณในทุกทิศทางเพื่อสำรวจ 360°';
@@ -755,7 +770,7 @@
         
         window.resetCamera = function() {
             if (isLocked) {
-                showError('กรุณาเริ่มใช้งานก่อน');
+                showErrorMessage('กรุณาเริ่มใช้งานก่อน');
                 return;
             }
             camera.position.set(0, 2, 18);
@@ -776,24 +791,24 @@
         
         window.toggleAutoRotate = function() {
             if (isLocked) {
-                showError('กรุณาเริ่มใช้งานก่อน');
+                showErrorMessage('กรุณาเริ่มใช้งานก่อน');
                 return;
             }
             autoRotate = !autoRotate;
             controls.autoRotate = autoRotate;
-            const btn = document.querySelector('.control-btn[onclick="toggleAutoRotate()"]');
+            const buttonElement = document.querySelector('.control-btn[onclick="toggleAutoRotate()"]');
             if (autoRotate) {
-                btn.classList.add('active');
+                buttonElement.classList.add('active');
                 updateModeStatus('หมุนอัตโนมัติ: เปิด');
             } else {
-                btn.classList.remove('active');
+                buttonElement.classList.remove('active');
                 updateModeStatus('หมุนอัตโนมัติ: ปิด');
             }
         };
         
         window.nextMarker = function() {
             if (isLocked) {
-                showError('กรุณาเริ่มใช้งานก่อน');
+                showErrorMessage('กรุณาเริ่มใช้งานก่อน');
                 return;
             }
             const newIndex = (currentMarkerIndex + 1) % markerData.length;
@@ -807,11 +822,11 @@
         // ===== HELPER FUNCTIONS =====
         function selectMarker(index) {
             currentMarkerIndex = index;
-            const data = markerData[index];
+            const markerInfo = markerData[index];
             
-            document.getElementById('info-title').textContent = `${data.id}. ${data.name}`;
-            document.getElementById('info-desc').textContent = data.desc;
-            document.getElementById('marker-counter').textContent = `จุดที่ ${data.id}/12`;
+            document.getElementById('info-title').textContent = `${markerInfo.id}. ${markerInfo.name}`;
+            document.getElementById('info-desc').textContent = markerInfo.desc;
+            document.getElementById('marker-counter').textContent = `จุดที่ ${markerInfo.id}/12`;
             showInfoPanel();
             
             markers.forEach((m, i) => {
@@ -824,63 +839,63 @@
                 m.ring.scale.setScalar(isSelected ? 1.3 : 1);
             });
             
-            const targetPos = data.pos.clone().multiplyScalar(1.85);
-            animateCameraTo(targetPos);
+            const targetPosition = markerInfo.pos.clone().multiplyScalar(1.85);
+            animateCameraToTarget(targetPosition);
         }
         
         function showInfoPanel() {
             document.getElementById('info-panel').classList.add('visible');
-            clearTimeout(window.infoPanelTimer);
-            window.infoPanelTimer = setTimeout(() => {
+            clearTimeout(window.infoPanelTimeout);
+            window.infoPanelTimeout = setTimeout(() => {
                 document.getElementById('info-panel').classList.remove('visible');
             }, 6000);
         }
         
-        function animateCameraTo(targetPosition) {
-            const startPos = camera.position.clone();
-            const startTime = Date.now();
-            const duration = 1200;
+        function animateCameraToTarget(targetPosition) {
+            const startPosition = camera.position.clone();
+            const animationStartTime = Date.now();
+            const animationDuration = 1200;
             
-            function update() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easeProgress = 1 - Math.pow(1 - progress, 4);
+            function updateAnimation() {
+                const elapsedTime = Date.now() - animationStartTime;
+                const progress = Math.min(elapsedTime / animationDuration, 1);
+                const easedProgress = 1 - Math.pow(1 - progress, 4);
                 
-                camera.position.lerpVectors(startPos, targetPosition, easeProgress);
+                camera.position.lerpVectors(startPosition, targetPosition, easedProgress);
                 camera.lookAt(0, 0, 0);
                 
-                if (progress < 1) requestAnimationFrame(update);
+                if (progress < 1) requestAnimationFrame(updateAnimation);
             }
-            update();
+            updateAnimation();
         }
         
-        function updateModeStatus(text) {
-            document.getElementById('mode-status').textContent = text;
+        function updateModeStatus(statusText) {
+            document.getElementById('mode-status').textContent = statusText;
         }
         
-        function showError(message) {
-            const errorDiv = document.getElementById('error-display');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            setTimeout(() => errorDiv.style.display = 'none', 4000);
+        function showErrorMessage(message) {
+            const errorDisplay = document.getElementById('error-display');
+            errorDisplay.textContent = message;
+            errorDisplay.style.display = 'block';
+            setTimeout(() => errorDisplay.style.display = 'none', 4000);
         }
         
-        function isMobile() {
+        function isMobileDevice() {
             return window.innerWidth <= 768 || 
                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
-        function deactivateGyro() {
+        function deactivateGyroscope() {
             gyroMode = false;
             isGyroCalibrated = false;
             controls.enabled = true;
-            window.removeEventListener('deviceorientation', handleGyro);
+            window.removeEventListener('deviceorientation', handleGyroscope);
             document.getElementById('gyro-btn').classList.remove('active');
             document.getElementById('gyro-fab').classList.remove('active');
             updateModeStatus('โหมดควบคุมปกติ');
         }
         
-        function handleGyro(event) {
+        function handleGyroscope(event) {
             if (!gyroMode) return;
             
             if (!isGyroCalibrated) {
@@ -906,7 +921,7 @@
             brainGroup.rotation.z = gyroGamma * 0.5;
         }
         
-        // ===== INITIALIZATION =====
+        // ===== INITIALIZATION SEQUENCE =====
         try {
             setTimeout(() => {
                 document.getElementById('loading').style.opacity = '0';
@@ -915,23 +930,23 @@
                 }, 800);
             }, 2000);
             
-            animate();
+            startRenderLoop();
             
         } catch (error) {
-            showError(`Initialization Error: ${error.message}`);
+            showErrorMessage(`Initialization Error: ${error.message}`);
             console.error('Full Error:', error);
         }
         
-        function animate(time) {
-            requestAnimationFrame(animate);
+        function startRenderLoop(currentTime) {
+            requestAnimationFrame(startRenderLoop);
             
-            if (time - lastTime < 16.67) return;
-            lastTime = time;
+            if (currentTime - animationTimestamp < 16.67) return;
+            animationTimestamp = currentTime;
             
             markers.forEach((m, i) => {
                 if (m.mesh.visible) {
-                    const pulse = Math.sin(time * 0.0018 + i * 0.5) * 0.15 + 0.85;
-                    m.ring.scale.setScalar(pulse * (m.mesh.scale.x > 1 ? 1.3 : 1));
+                    const pulseEffect = Math.sin(currentTime * 0.0018 + i * 0.5) * 0.15 + 0.85;
+                    m.ring.scale.setScalar(pulseEffect * (m.mesh.scale.x > 1 ? 1.3 : 1));
                     m.ring.lookAt(camera.position);
                 }
             });
@@ -945,7 +960,7 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            CONFIG.resolution = isMobile() ? 220 : 360;
+            brainGenerationParams.vertexResolution = isMobileDevice() ? 220 : 360;
         });
         
         renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
