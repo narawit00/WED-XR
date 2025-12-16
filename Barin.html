@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Brain 3D Model XR - 360° Interactive</title>
+    <title>Brain 3D Model XR - Ultra Edition</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             overflow: hidden; 
-            background: radial-gradient(circle at center, #2a2a4a 0%, #0a0a1a 100%);
+            background: radial-gradient(circle at center, #1a1a2a 0%, #0a0a0a 100%);
             font-family: 'Sarabun', sans-serif;
             user-select: none;
             -webkit-user-select: none;
@@ -18,7 +18,7 @@
         }
         canvas { display: block; width: 100vw; height: 100vh; }
         
-        /* Loading Screen - Bilingual */
+        /* Loading Screen */
         #loading {
             position: absolute;
             inset: 0;
@@ -33,8 +33,8 @@
         .loader-brain {
             width: 100px;
             height: 100px;
-            border: 5px solid rgba(255, 204, 204, 0.2);
-            border-top-color: #ffcccc;
+            border: 5px solid rgba(200, 150, 150, 0.2);
+            border-top-color: #ffaaaa;
             border-radius: 50%;
             animation: brainSpin 1.5s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
             margin-bottom: 25px;
@@ -47,8 +47,8 @@
             left: 10px;
             right: 10px;
             bottom: 10px;
-            border: 3px solid rgba(255, 204, 204, 0.1);
-            border-top-color: #ff9999;
+            border: 3px solid rgba(200, 150, 150, 0.1);
+            border-top-color: #ff8888;
             border-radius: 50%;
             animation: brainSpin 2s linear infinite reverse;
         }
@@ -58,7 +58,7 @@
             100% { transform: rotate(360deg) scale(1); }
         }
         #loading-text {
-            color: #ffcccc;
+            color: #ffaaaa;
             font-size: 1.3rem;
             font-weight: 600;
             text-shadow: 0 2px 10px rgba(0,0,0,0.7);
@@ -71,7 +71,7 @@
             font-weight: 400;
         }
         
-        /* Main UI - Glassmorphism */
+        /* Main UI */
         .main-ui {
             position: absolute;
             top: 0;
@@ -102,7 +102,7 @@
             font-size: clamp(1rem, 3vw, 1.5rem);
             font-weight: 700;
             margin-bottom: 5px;
-            color: #ffcccc;
+            color: #ffaaaa;
             text-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
         #status-text {
@@ -131,9 +131,9 @@
             transform: translateX(5px);
         }
         .control-btn.active {
-            background: rgba(46, 213, 115, 0.25);
-            border-color: #2ed573;
-            color: #2ed573;
+            background: rgba(255, 100, 100, 0.25);
+            border-color: #ff6464;
+            color: #ff6464;
         }
         
         /* Info Panel */
@@ -144,7 +144,7 @@
             transform: translateX(-50%) translateY(120px);
             background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 204, 204, 0.3);
+            border: 1px solid rgba(200, 150, 150, 0.3);
             border-radius: 20px;
             padding: 20px 25px;
             max-width: 450px;
@@ -161,7 +161,7 @@
             transform: translateX(-50%) translateY(0);
         }
         #info-panel h2 {
-            color: #ffcccc;
+            color: #ffaaaa;
             margin-bottom: 10px;
             font-size: clamp(1.1rem, 2.5vw, 1.4rem);
             font-weight: 700;
@@ -173,7 +173,7 @@
         }
         .marker-counter {
             font-size: 0.75rem;
-            color: #ffcccc;
+            color: #ffaaaa;
             margin-top: 8px;
             font-weight: 600;
         }
@@ -206,7 +206,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         }
         .fab:hover { transform: scale(1.1) rotate(5deg); background: rgba(255, 255, 255, 0.15); }
-        .fab.active { background: rgba(46, 213, 115, 0.25); border-color: #2ed573; color: #2ed573; }
+        .fab.active { background: rgba(255, 100, 100, 0.25); border-color: #ff6464; color: #ff6464; }
         
         /* Instructions Overlay */
         #instructions {
@@ -238,7 +238,7 @@
         .instruction-content h2 {
             font-size: 2rem;
             margin-bottom: 20px;
-            color: #ffcccc;
+            color: #ffaaaa;
         }
         .instruction-content p {
             font-size: 1.1rem;
@@ -248,9 +248,9 @@
         .instruction-content button {
             margin-top: 25px;
             padding: 12px 35px;
-            background: linear-gradient(135deg, #ffcccc, #cc8888);
+            background: linear-gradient(135deg, #ffaaaa, #ff8888);
             border: none;
-            color: #1a1a2a;
+            color: #1a1a1a;
             font-size: 1rem;
             font-weight: 600;
             border-radius: 30px;
@@ -273,15 +273,15 @@
             z-index: 2000;
             display: none;
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 204, 204, 0.3);
+            border: 1px solid rgba(200, 150, 150, 0.3);
         }
-        #gyro-calib-ui h3 { color: #ffcccc; margin-bottom: 15px; }
+        #gyro-calib-ui h3 { color: #ffaaaa; margin-bottom: 15px; }
         #gyro-calib-ui button {
             margin-top: 15px;
             padding: 10px 30px;
-            background: #2ed573;
+            background: #ff6464;
             border: none;
-            color: white;
+            color: #0a0a1a;
             border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
@@ -312,14 +312,14 @@
             text-align: center;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400 ;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400  ;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <!-- Loading Screen -->
     <div id="loading">
         <div class="loader-brain"></div>
-        <div id="loading-text">Loading Brain 3D Model...</div>
-        <div id="loading-detail">Initializing engine...</div>
+        <div id="loading-text">กำลังโหลดโมเดลสมอง...</div>
+        <div id="loading-detail">กำลังสร้างรายละเอียดสูงสุด</div>
     </div>
     
     <!-- Error Display -->
@@ -328,47 +328,47 @@
     <!-- Instructions (Lock Screen) -->
     <div id="instructions" class="visible">
         <div class="instruction-content">
-            <h2>🧠 Brain 3D Model XR</h2>
-            <p><strong>PC Controls:</strong> Right-click & drag to rotate | Scroll to zoom</p>
-            <p><strong>Mobile Controls:</strong> Tap markers | Press 🔄 for Gyroscope 360°</p>
-            <p style="color: #ffcccc; margin-top: 20px;">Auto-adjusted quality for your device</p>
-            <button onclick="startExperience()">Start Experience</button>
+            <h2>🧠 โมเดลสมอง 3D - 360°</h2>
+            <p><strong>PC:</strong> คลิกขวา + ลากเพื่อหมุน | เลื่อนเมาส์เพื่อซูม</p>
+            <p><strong>มือถือ:</strong> แตะที่มาร์กเกอร์ | กด 🔄 เพื่อใช้ Gyroscope 360°</p>
+            <p style="color: #ffaaaa; margin-top: 20px;">ปรับคุณภาพอัตโนมัติตามอุปกรณ์ของคุณ</p>
+            <button onclick="startExperience()">เริ่มใช้งาน</button>
         </div>
     </div>
     
     <!-- Gyro Calibration -->
     <div id="gyro-calib-ui">
-        <h3>🔄 Gyroscope Mode</h3>
-        <p>Place device vertically and press start</p>
-        <button onclick="completeGyroCal()">Start Gyro</button>
+        <h3>🔄 โหมด Gyroscope</h3>
+        <p>วางอุปกรณ์ให้ตั้งตรงแล้วกดเริ่ม</p>
+        <button onclick="completeGyroCal()">เริ่มต้น</button>
     </div>
     
     <!-- Main UI -->
     <div class="main-ui">
         <div id="title-section" class="ui-card">
-            <h1>Brain 3D Model - 360°</h1>
-            <p id="mode-status">Normal Control Mode</p>
+            <h1>โมเดลสมอง 3D - Ultra</h1>
+            <p id="mode-status">โหมดควบคุมปกติ</p>
         </div>
         
         <div id="controls-section" class="ui-card">
-            <button class="control-btn" id="gyro-btn" onclick="toggleGyro()">Enable Gyroscope Mode</button>
-            <button class="control-btn" onclick="resetCamera()">📍 Reset View</button>
-            <button class="control-btn" onclick="toggleAutoRotate()">🎬 Auto Rotate</button>
-            <button class="control-btn" onclick="showHelp()">❓ Help</button>
+            <button class="control-btn" id="gyro-btn" onclick="toggleGyro()">เปิดใช้ Gyroscope</button>
+            <button class="control-btn" onclick="resetCamera()">📍 รีเซ็ตมุมมอง</button>
+            <button class="control-btn" onclick="toggleAutoRotate()">🎬 หมุนอัตโนมัติ</button>
+            <button class="control-btn" onclick="showHelp()">❓ วิธีใช้</button>
         </div>
     </div>
     
     <!-- FAB Controls -->
     <div class="fab-container">
-        <div class="fab" id="gyro-fab" onclick="toggleGyro()" title="Toggle Gyroscope">🔄</div>
-        <div class="fab" onclick="nextMarker()" title="Next Marker">➡️</div>
+        <div class="fab" id="gyro-fab" onclick="toggleGyro()" title="เปิด/ปิด Gyroscope">🔄</div>
+        <div class="fab" onclick="nextMarker()" title="จุดถัดไป">➡️</div>
     </div>
     
     <!-- Info Panel -->
     <div id="info-panel">
-        <h2 id="info-title">Loading...</h2>
-        <p id="info-desc">Please wait...</p>
-        <div class="marker-counter" id="marker-counter">Point 0/12</div>
+        <h2 id="info-title">กำลังโหลด...</h2>
+        <p id="info-desc">กรุณารอสักครู่...</p>
+        <div class="marker-counter" id="marker-counter">จุดที่ 0/12</div>
     </div>
     
     <script>
@@ -376,7 +376,7 @@
         window.addEventListener('error', function(e) {
             console.error('Critical Error:', e.error);
             document.getElementById('error-display').innerHTML = 
-                `<strong>❌ Error</strong><br>${e.error.message}<br><small>Please refresh the page</small>`;
+                `<strong>❌ เกิดข้อผิดพลาด</strong><br>${e.error.message}<br><small>กรุณารีเฟรชหน้าจอ</small>`;
             document.getElementById('error-display').style.display = 'block';
             document.getElementById('loading').style.display = 'none';
         });
@@ -396,25 +396,26 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
         
-        // ===== STATE MANAGEMENT =====
-        let isLocked = true; // Lock system active on start
+        // ===== GLOBAL VARIABLES =====
+        let isLocked = true;
         let currentMarkerIndex = -1;
         let gyroMode = false;
-        // Gyroscope values for 360° tracking
         let gyroAlpha = 0, gyroBeta = 0, gyroGamma = 0;
         let gyroCalibration = { alpha: 0, beta: 0, gamma: 0 };
         let isGyroCalibrated = false;
         let autoRotate = false;
-        
+        let scene, camera, renderer, controls, brainGroup, markers = [], markerData = [];
+        let lastTime = 0;
+
         // ===== SCENE SETUP =====
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a1a);
-        scene.fog = new THREE.Fog(0x0a0a1a, 15, 45);
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.Fog(0x0a0a0a, 15, 50);
         
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 2, 18);
         
-        const renderer = new THREE.WebGLRenderer({ 
+        renderer = new THREE.WebGLRenderer({ 
             antialias: true, 
             alpha: true,
             powerPreference: "high-performance"
@@ -422,19 +423,19 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile() ? 1.5 : 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.3;
+        renderer.toneMappingExposure = 1.4;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
         
-        // ===== HIGH-QUALITY LIGHTING SYSTEM =====
+        // ===== HIGH-QUALITY LIGHTING =====
         const lighting = {
-            ambient: new THREE.AmbientLight(0xffffff, 0.3),
-            main: new THREE.DirectionalLight(0xffd4d4, 2.2),
-            rim: new THREE.SpotLight(0xffcccc, 4, 60, Math.PI / 4, 0.5),
-            fill: new THREE.PointLight(0xb8b8ff, 1.2, 100),
-            accent: new THREE.PointLight(0xff6b9c, 0.9, 100)
+            ambient: new THREE.AmbientLight(0xffffff, 0.4),
+            main: new THREE.DirectionalLight(0xffffff, 2.5),
+            rim: new THREE.SpotLight(0xffcccc, 4.5, 60, Math.PI / 4, 0.5),
+            fill: new THREE.PointLight(0xff8888, 1.5, 100),
+            accent: new THREE.PointLight(0xffaaaa, 1.0, 100)
         };
         
         lighting.main.position.set(-8, 12, 8);
@@ -445,100 +446,185 @@
         lighting.accent.position.set(-5, 3, 6);
         Object.values(lighting).forEach(light => scene.add(light));
         
-        // ===== ULTRA-REALISTIC MATERIALS =====
+        // ===== 🔥 REALISTIC BRAIN COLORS =====
         const materials = {
             cortex: new THREE.MeshPhysicalMaterial({
-                color: 0xcc8888,
-                roughness: 0.15,
-                metalness: 0.03,
+                color: 0xffd0d0,  // 🧠 สีชมพูอ่อน (Cortex สมองจริง)
+                roughness: 0.12,
+                metalness: 0.02,
                 clearcoat: 1.0,
-                clearcoatRoughness: 0.05,
-                transmission: 0.08,
-                thickness: 2.0,
-                ior: 1.5,
+                clearcoatRoughness: 0.03,
+                transmission: 0.05,
+                thickness: 1.5,
+                ior: 1.4,
                 side: THREE.DoubleSide
             }),
             cerebellum: new THREE.MeshPhysicalMaterial({
-                color: 0xbd7b7b,
-                roughness: 0.2,
-                clearcoat: 0.8,
+                color: 0xffc0c0,  // 🧠 สีชมพูอ่อน (Cerebellum)
+                roughness: 0.15,
+                clearcoat: 0.9,
                 side: THREE.DoubleSide
             }),
             brainstem: new THREE.MeshPhysicalMaterial({
-                color: 0xcc2e3e,
-                roughness: 0.25,
-                clearcoat: 0.6,
+                color: 0xffa0a0,  // 🧠 สีชมพูเข้มขึ้น (Brainstem)
+                roughness: 0.18,
+                clearcoat: 0.7,
                 side: THREE.DoubleSide
+            }),
+            marker: new THREE.MeshBasicMaterial({
+                color: 0xff4444,  // 🔴 สีแดงสดสำหรับมาร์กเกอร์
+                transparent: true,
+                opacity: 0.95
+            }),
+            markerRing: new THREE.MeshBasicMaterial({
+                color: 0xff4444,
+                transparent: true,
+                opacity: 0.7
+            }),
+            connectionLine: new THREE.LineBasicMaterial({
+                color: 0xffaaaa,  // เส้นเชื่อมสีชมพูอ่อน
+                transparent: true,
+                opacity: 0.6
             })
         };
         
         // ===== PROCEDURAL BRAIN GENERATION =====
         const simplex = new SimplexNoise();
-        const brainGroup = createRealisticBrain();
-        scene.add(brainGroup);
+        brainGroup = new THREE.Group();
         
-        function createRealisticBrain() {
-            const group = new THREE.Group();
-            
-            // Cerebrum with anatomical details
-            const cerebrumGeo = new THREE.IcosahedronGeometry(2.3, 96);
-            const pos = cerebrumGeo.attributes.position;
-            const vector = new THREE.Vector3();
-            
-            for (let i = 0; i < pos.count; i++) {
-                vector.fromBufferAttribute(pos, i);
-                const normal = vector.clone().normalize();
+        const CONFIG = {
+            resolution: isMobile() ? 220 : 360,
+            colorRidge: new THREE.Color(0xffe0e0).convertSRGBToLinear(),  // สียอดร่องสมอง
+            colorValley: new THREE.Color(0xffa0a0).convertSRGBToLinear(), // สีก้นร่องสมอง
+            roughness: 0.12,
+            metalness: 0.02,
+            clearcoat: 1.0,
+            hemisphereGap: 0.12,
+            noiseScale: 2.2,
+            displacement: 0.25
+        };
+        
+        function createCerebrumPart(isRight, mat) {
+            const geo = new THREE.SphereGeometry(1.2, CONFIG.resolution, CONFIG.resolution);
+            const pos = geo.attributes.position;
+            const count = pos.count;
+            const vec = new THREE.Vector3();
+            const colors = new Float32Array(count * 3);
+            const colTemp = new THREE.Color();
+
+            for (let i = 0; i < count; i++) {
+                vec.fromBufferAttribute(pos, i);
+                vec.x *= 0.85; vec.z *= 1.3;
+                if (vec.y < -0.3) vec.y = -0.3 + (vec.y + 0.3) * 0.4;
                 
-                // Major anatomical fissures
-                const longitudinal = Math.abs(vector.z) < 0.25 ? 0.5 : 0;
-                const central = Math.abs(vector.x) < 0.15 && vector.y > 0.2 ? 0.35 : 0;
-                const lateral = vector.y < -0.15 && Math.abs(vector.z) < 0.4 ? 0.4 : 0;
+                if (isRight) {
+                    if (vec.x < 0) vec.x *= 0.1;
+                    vec.x += CONFIG.hemisphereGap / 2;
+                } else {
+                    if (vec.x > 0) vec.x *= 0.1;
+                    vec.x -= CONFIG.hemisphereGap / 2;
+                }
+
+                let nx = vec.x * CONFIG.noiseScale;
+                let ny = vec.y * CONFIG.noiseScale;
+                let nz = vec.z * CONFIG.noiseScale;
                 
-                // Gyri patterns using fractal noise
-                const scale = 3.0;
-                const noise1 = simplex.noise3d(vector.x * scale, vector.y * scale, vector.z * scale);
-                const noise2 = simplex.noise3d(vector.x * scale * 2.5, vector.y * scale * 2.5, vector.z * scale * 2.5);
-                const ridges = Math.pow(Math.abs(noise1), 0.6) * (1 + noise2 * 0.15);
+                let warp = simplex.noise(nx, ny, nz) * 0.6;
+                let n1 = simplex.noise(nx + warp, ny + warp, nz);
+                let n2 = simplex.noise(nx*4, ny*4, nz*4) * 0.12;
                 
-                const totalDisplacement = 0.28 * ridges - (longitudinal + central + lateral) * 0.45;
-                vector.add(normal.multiplyScalar(totalDisplacement));
-                pos.setXYZ(i, vector.x * 1.35, vector.y * 0.95, vector.z * 0.85);
+                let noiseVal = n1 + n2;
+                let ridge = 1.0 - Math.abs(noiseVal);
+                ridge = Math.pow(ridge, 1.3);
+                
+                let distFromMid = Math.abs(isRight ? vec.x - 0.06 : vec.x + 0.06);
+                if (distFromMid < 0.25) ridge *= (distFromMid * 4);
+
+                let displacement = ridge * CONFIG.displacement;
+                let normal = vec.clone().normalize();
+                if (Math.abs(vec.x) < 0.1) displacement *= 0.2;
+                vec.add(normal.multiplyScalar(displacement));
+
+                colTemp.copy(CONFIG.colorValley).lerp(CONFIG.colorRidge, ridge * ridge);
+                colors[i*3] = colTemp.r;
+                colors[i*3+1] = colTemp.g;
+                colors[i*3+2] = colTemp.b;
+
+                pos.setXYZ(i, vec.x, vec.y, vec.z);
             }
-            
-            cerebrumGeo.computeVertexNormals();
-            const cerebrum = new THREE.Mesh(cerebrumGeo, materials.cortex);
-            cerebrum.castShadow = cerebrum.receiveShadow = true;
-            group.add(cerebrum);
-            
-            // Cerebellum with folia patterns
-            const cerebellumGeo = new THREE.SphereGeometry(1.15, 72, 72);
-            const cbPos = cerebellumGeo.attributes.position;
-            for (let i = 0; i < cbPos.count; i++) {
-                vector.fromBufferAttribute(cbPos, i);
-                vector.x *= 0.88; vector.y *= 0.65; vector.z *= 1.25;
-                const folia = Math.sin((vector.y + simplex.noise3d(vector.x*2, vector.y*2, vector.z*2)*0.1) * 28) * 0.1;
-                vector.add(vector.clone().normalize().multiplyScalar(folia));
-                cbPos.setXYZ(i, vector.x, vector.y, vector.z);
+
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geo.computeVertexNormals();
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        function createCerebellum(mat) {
+            const geo = new THREE.SphereGeometry(0.7, CONFIG.resolution, CONFIG.resolution);
+            const pos = geo.attributes.position;
+            const vec = new THREE.Vector3();
+            const colors = new Float32Array(pos.count * 3);
+            const colTemp = new THREE.Color();
+
+            for(let i=0; i<pos.count; i++) {
+                vec.fromBufferAttribute(pos, i);
+                vec.y *= 0.6; vec.x *= 1.4;
+                let freq = 35.0;
+                let stripe = Math.sin(vec.y * freq + vec.z * 10);
+                let disp = (stripe + 1.0) * 0.025;
+                vec.add(vec.clone().normalize().multiplyScalar(disp));
+                let mix = (stripe + 1) / 2;
+                colTemp.copy(CONFIG.colorValley).lerp(CONFIG.colorRidge, mix);
+                colors[i*3] = colTemp.r; colors[i*3+1] = colTemp.g; colors[i*3+2] = colTemp.b;
+                pos.setXYZ(i, vec.x, vec.y, vec.z);
             }
-            cerebellumGeo.computeVertexNormals();
-            const cerebellum = new THREE.Mesh(cerebellumGeo, materials.cerebellum);
-            cerebellum.position.set(1.9, -1.3, 0);
-            cerebellum.rotation.z = 0.25;
-            cerebellum.castShadow = cerebellum.receiveShadow = true;
-            group.add(cerebellum);
-            
-            // Brainstem
-            const stemGeo = new THREE.CylinderGeometry(0.35, 0.65, 2.8, 20);
-            const stem = new THREE.Mesh(stemGeo, materials.brainstem);
-            stem.position.set(0.2, -2.2, 0);
-            stem.castShadow = stem.receiveShadow = true;
-            group.add(stem);
-            
-            return group;
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geo.computeVertexNormals();
+            const m = new THREE.Mesh(geo, mat);
+            m.position.set(0, -0.65, -0.9);
+            m.rotation.x = -0.2;
+            m.castShadow = true;
+            m.receiveShadow = true;
+            return m;
+        }
+
+        function createBrainStem(mat) {
+            const geo = new THREE.CylinderGeometry(0.35, 0.22, 1.8, 64, 20);
+            const pos = geo.attributes.position;
+            const colors = new Float32Array(pos.count * 3);
+            const vec = new THREE.Vector3();
+
+            for(let i=0; i<pos.count; i++){
+                vec.fromBufferAttribute(pos, i);
+                vec.z += Math.pow(vec.y, 2) * 0.1;
+                pos.setXYZ(i, vec.x, vec.y, vec.z);
+                colors[i*3] = CONFIG.colorRidge.r;
+                colors[i*3+1] = CONFIG.colorRidge.g;
+                colors[i*3+2] = CONFIG.colorRidge.b;
+            }
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geo.computeVertexNormals();
+            const m = new THREE.Mesh(geo, mat);
+            m.position.set(0, -1.4, -0.3);
+            m.rotation.x = 0.2;
+            m.receiveShadow = true;
+            return m;
         }
         
-        // ===== MARKER SYSTEM WITH THAI DESCRIPTIONS =====
-        const markerData = [
+        // Build brain
+        const leftHemi = createCerebrumPart(false, materials.cortex);
+        const rightHemi = createCerebrumPart(true, materials.cortex);
+        const cerebellum = createCerebellum(materials.cerebellum);
+        const stem = createBrainStem(materials.brainstem);
+        brainGroup.add(leftHemi, rightHemi, cerebellum, stem);
+        brainGroup.rotation.x = 0.2;
+        brainGroup.scale.setScalar(isMobile() ? 0.85 : 1);
+        scene.add(brainGroup);
+        
+        // ===== MARKER SYSTEM =====
+        markerData = [
             { id: 1, name: "สมองส่วนหน้า", pos: new THREE.Vector3(0, 1.8, 2.4), desc: "ควบคุมการตัดสินใจ การวางแผน และบุคลิกภาพ" },
             { id: 2, name: "สมองส่วนขมับ", pos: new THREE.Vector3(-2.8, -0.3, 1.6), desc: "ความจำ การรับรู้เสียง และภาษา" },
             { id: 3, name: "สมองส่วนคาง", pos: new THREE.Vector3(2.8, 0.7, 2.0), desc: "ประมวลผลสัมผัส พื้นที่และการเคลื่อนไหว" },
@@ -553,38 +639,32 @@
             { id: 12, name: "มัธธุลาปลาย", pos: new THREE.Vector3(0.4, -2.8, 0.2), desc: "ควบคุมการหายใจและการเต้นของหัวใจ" }
         ];
         
-        const markers = [];
-        
-        // Create 3D markers with glow
         markerData.forEach((data, index) => {
-            // Main marker
-            const markerGeo = new THREE.SphereGeometry(0.1, 20, 20);
-            const markerMat = new THREE.MeshBasicMaterial({ 
-                color: 0xffcccc,
-                transparent: true,
-                opacity: 0.95
-            });
-            const markerMesh = new THREE.Mesh(markerGeo, markerMat);
+            const markerGeo = new THREE.SphereGeometry(0.08, 16, 16);
+            const markerMesh = new THREE.Mesh(markerGeo, materials.marker);
             markerMesh.position.copy(data.pos);
             markerMesh.userData = { id: data.id, index, type: 'marker' };
             
-            // Glow ring
-            const ringGeo = new THREE.TorusGeometry(0.15, 0.03, 8, 20);
-            const ringMat = new THREE.MeshBasicMaterial({
-                color: 0xffcccc,
-                transparent: true,
-                opacity: 0.6
-            });
-            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            const ringGeo = new THREE.TorusGeometry(0.12, 0.02, 8, 16);
+            const ringMesh = new THREE.Mesh(ringGeo, materials.markerRing);
             ringMesh.position.copy(data.pos);
-            ringMesh.lookAt(camera.position);
             
-            brainGroup.add(markerMesh, ringMesh);
-            markers.push({ mesh: markerMesh, ring: ringMesh, data });
+            const surfacePoint = data.pos.clone().multiplyScalar(0.85);
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([data.pos, surfacePoint]);
+            const lineMesh = new THREE.Line(lineGeo, materials.connectionLine);
+            
+            const arrowGeo = new THREE.ConeGeometry(0.04, 0.15, 8);
+            const arrowMesh = new THREE.Mesh(arrowGeo, materials.marker);
+            const arrowPos = data.pos.clone().multiplyScalar(0.88);
+            arrowMesh.position.copy(arrowPos);
+            arrowMesh.lookAt(surfacePoint);
+            
+            brainGroup.add(markerMesh, ringMesh, lineMesh, arrowMesh);
+            markers.push({ mesh: markerMesh, ring: ringMesh, line: lineMesh, arrow: arrowMesh, data });
         });
         
-        // ===== CONTROLS SETUP (INITIALLY LOCKED) =====
-        const controls = new OrbitControls(camera, renderer.domElement);
+        // ===== CONTROLS =====
+        controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.08;
         controls.minDistance = 5;
@@ -592,9 +672,9 @@
         controls.maxPolarAngle = Math.PI * 0.85;
         controls.autoRotate = false;
         controls.autoRotateSpeed = 0.4;
-        controls.enabled = false; // Locked until user starts
+        controls.enabled = false;
         
-        // ===== RAYCASTING INTERACTION =====
+        // ===== RAYCASTING =====
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         
@@ -617,7 +697,8 @@
         
         function checkMarkerInteraction() {
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(brainGroup.children.filter(child => child.userData.type === 'marker'));
+            const markerMeshes = markers.map(m => m.mesh);
+            const intersects = raycaster.intersectObjects(markerMeshes);
             
             if (intersects.length > 0) {
                 const index = intersects[0].object.userData.index;
@@ -625,25 +706,124 @@
             }
         }
         
-        // ===== MARKER NAVIGATION =====
+        // ===== GLOBAL FUNCTIONS =====
+        window.startExperience = function() {
+            isLocked = false;
+            controls.enabled = true;
+            document.getElementById('instructions').classList.remove('visible');
+            updateModeStatus('โหมดควบคุมปกติ - แตะที่มาร์กเกอร์เพื่อสำรวจ');
+            selectMarker(0);
+        };
+        
+        window.toggleGyro = async function() {
+            if (isLocked) {
+                showError('กรุณาเริ่มใช้งานก่อน');
+                return;
+            }
+            
+            if (!gyroMode) {
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    try {
+                        const permission = await DeviceOrientationEvent.requestPermission();
+                        if (permission !== 'granted') {
+                            showError('ต้องได้รับอนุญาตเข้าถึง Gyroscope');
+                            return;
+                        }
+                    } catch { return; }
+                }
+                
+                document.getElementById('gyro-calib-ui').style.display = 'block';
+                gyroMode = true;
+                controls.enabled = false;
+                document.getElementById('gyro-btn').classList.add('active');
+                document.getElementById('gyro-fab').classList.add('active');
+                updateModeStatus('โหมด Gyroscope - รอการคาลิเบรท');
+            } else {
+                deactivateGyro();
+            }
+        };
+        
+        window.completeGyroCal = function() {
+            document.getElementById('gyro-calib-ui').style.display = 'none';
+            isGyroCalibrated = false;
+            window.addEventListener('deviceorientation', handleGyro, { passive: true });
+            showInfoPanel();
+            document.getElementById('info-title').textContent = '🔄 Gyroscope พร้อมใช้งาน';
+            document.getElementById('info-desc').textContent = 'หมุนอุปกรณ์ของคุณในทุกทิศทางเพื่อสำรวจ 360°';
+            updateModeStatus('โหมด Gyroscope - ติดตามการเคลื่อนไหว');
+        };
+        
+        window.resetCamera = function() {
+            if (isLocked) {
+                showError('กรุณาเริ่มใช้งานก่อน');
+                return;
+            }
+            camera.position.set(0, 2, 18);
+            camera.lookAt(0, 0, 0);
+            brainGroup.rotation.set(0, 0, 0);
+            currentMarkerIndex = -1;
+            markers.forEach(m => {
+                m.mesh.material.opacity = 0.95;
+                m.ring.material.opacity = 0.7;
+                m.line.material.opacity = 0.6;
+                m.arrow.material.opacity = 0.95;
+                m.mesh.scale.setScalar(1);
+                m.ring.scale.setScalar(1);
+            });
+            document.getElementById('info-panel').classList.remove('visible');
+            updateModeStatus('รีเซ็ตมุมมองเรียบร้อย');
+        };
+        
+        window.toggleAutoRotate = function() {
+            if (isLocked) {
+                showError('กรุณาเริ่มใช้งานก่อน');
+                return;
+            }
+            autoRotate = !autoRotate;
+            controls.autoRotate = autoRotate;
+            const btn = document.querySelector('.control-btn[onclick="toggleAutoRotate()"]');
+            if (autoRotate) {
+                btn.classList.add('active');
+                updateModeStatus('หมุนอัตโนมัติ: เปิด');
+            } else {
+                btn.classList.remove('active');
+                updateModeStatus('หมุนอัตโนมัติ: ปิด');
+            }
+        };
+        
+        window.nextMarker = function() {
+            if (isLocked) {
+                showError('กรุณาเริ่มใช้งานก่อน');
+                return;
+            }
+            const newIndex = (currentMarkerIndex + 1) % markerData.length;
+            selectMarker(newIndex);
+        };
+        
+        window.showHelp = function() {
+            document.getElementById('instructions').classList.add('visible');
+        };
+        
+        // ===== HELPER FUNCTIONS =====
         function selectMarker(index) {
             currentMarkerIndex = index;
             const data = markerData[index];
             
-            // Update UI (Thai descriptions preserved)
             document.getElementById('info-title').textContent = `${data.id}. ${data.name}`;
             document.getElementById('info-desc').textContent = data.desc;
-            document.getElementById('marker-counter').textContent = `${data.id}/12`;
+            document.getElementById('marker-counter').textContent = `จุดที่ ${data.id}/12`;
             showInfoPanel();
             
-            // Highlight selected marker
             markers.forEach((m, i) => {
-                m.mesh.material.opacity = i === index ? 1 : 0.4;
-                m.ring.material.opacity = i === index ? 0.8 : 0.2;
-                m.mesh.scale.setScalar(i === index ? 1.3 : 1);
+                const isSelected = i === index;
+                m.mesh.material.opacity = isSelected ? 1 : 0.4;
+                m.ring.material.opacity = isSelected ? 0.9 : 0.2;
+                m.line.material.opacity = isSelected ? 0.8 : 0.3;
+                m.arrow.material.opacity = isSelected ? 1 : 0.4;
+                m.mesh.scale.setScalar(isSelected ? 1.3 : 1);
+                m.ring.scale.setScalar(isSelected ? 1.3 : 1);
             });
             
-            // Animate camera
             const targetPos = data.pos.clone().multiplyScalar(1.85);
             animateCameraTo(targetPos);
         }
@@ -659,7 +839,7 @@
         function animateCameraTo(targetPosition) {
             const startPos = camera.position.clone();
             const startTime = Date.now();
-            const duration = 1500;
+            const duration = 1200;
             
             function update() {
                 const elapsed = Date.now() - startTime;
@@ -674,155 +854,6 @@
             update();
         }
         
-        // ===== START EXPERIENCE (UNLOCK) =====
-        function startExperience() {
-            isLocked = false;
-            controls.enabled = true;
-            document.getElementById('instructions').classList.remove('visible');
-            updateModeStatus('Normal Control Mode - Click markers to explore');
-            selectMarker(0);
-        }
-        window.startExperience = startExperience;
-        
-        // ===== ENHANCED GYROSCOPE SYSTEM (REALISTIC 360°) =====
-        async function toggleGyro() {
-            if (isLocked) {
-                showError('Please start the experience first');
-                return;
-            }
-            
-            if (!gyroMode) {
-                // iOS permission
-                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    try {
-                        const permission = await DeviceOrientationEvent.requestPermission();
-                        if (permission !== 'granted') {
-                            showError('Gyroscope permission required');
-                            return;
-                        }
-                    } catch { return; }
-                }
-                
-                document.getElementById('gyro-calib-ui').style.display = 'block';
-                gyroMode = true;
-                controls.enabled = false;
-                document.getElementById('gyro-btn').classList.add('active');
-                document.getElementById('gyro-fab').classList.add('active');
-                updateModeStatus('Gyroscope Mode - Awaiting calibration');
-            } else {
-                deactivateGyro();
-            }
-        }
-        window.toggleGyro = toggleGyro;
-        
-        function completeGyroCal() {
-            document.getElementById('gyro-calib-ui').style.display = 'none';
-            isGyroCalibrated = false; // Will calibrate on next gyro event
-            window.addEventListener('deviceorientation', handleGyro, { passive: true });
-            showInfoPanel();
-            document.getElementById('info-title').textContent = '🔄 Gyroscope Active';
-            document.getElementById('info-desc').textContent = 'Rotate your device in any direction to explore 360°';
-        }
-        window.completeGyroCal = completeGyroCal;
-        
-        function deactivateGyro() {
-            gyroMode = false;
-            isGyroCalibrated = false;
-            controls.enabled = true;
-            document.removeEventListener('deviceorientation', handleGyro);
-            document.getElementById('gyro-btn').classList.remove('active');
-            document.getElementById('gyro-fab').classList.remove('active');
-            updateModeStatus('Normal Control Mode');
-        }
-        
-        function handleGyro(event) {
-            if (!gyroMode) return;
-            
-            // Auto-calibrate on first reading
-            if (!isGyroCalibrated) {
-                gyroCalibration.alpha = event.alpha || 0;
-                gyroCalibration.beta = event.beta || 0;
-                gyroCalibration.gamma = event.gamma || 0;
-                isGyroCalibrated = true;
-                return;
-            }
-            
-            // Get RELATIVE rotation from calibration (true following)
-            const alphaDelta = (event.alpha || 0) - gyroCalibration.alpha;
-            const betaDelta = (event.beta || 0) - gyroCalibration.beta;
-            const gammaDelta = (event.gamma || 0) - gyroCalibration.gamma;
-            
-            // Convert to radians
-            const targetAlpha = THREE.MathUtils.degToRad(alphaDelta);
-            const targetBeta = THREE.MathUtils.degToRad(betaDelta);
-            const targetGamma = THREE.MathUtils.degToRad(gammaDelta);
-            
-            // SMOOTH but RESPONSIVE interpolation
-            const lerpFactor = 0.2;
-            gyroAlpha = THREE.MathUtils.lerp(gyroAlpha, targetAlpha, lerpFactor);
-            gyroBeta = THREE.MathUtils.lerp(gyroBeta, targetBeta, lerpFactor);
-            gyroGamma = THREE.MathUtils.lerp(gyroGamma, targetGamma, lerpFactor);
-            
-            // REALISTIC 360° MAPPING - Model follows phone directly
-            brainGroup.rotation.order = 'YXZ'; // Prevent gimbal lock
-            brainGroup.rotation.x = -gyroBeta; // Inverted for intuitive feel
-            brainGroup.rotation.y = -gyroAlpha; // Inverted for intuitive feel
-            brainGroup.rotation.z = gyroGamma * 0.5; // Reduced roll for stability
-        }
-        
-        // ===== UI FUNCTIONS (ENGLISH) =====
-        function resetCamera() {
-            if (isLocked) {
-                showError('Please start the experience first');
-                return;
-            }
-            camera.position.set(0, 2, 18);
-            camera.lookAt(0, 0, 0);
-            brainGroup.rotation.set(0, 0, 0);
-            currentMarkerIndex = -1;
-            markers.forEach(m => {
-                m.mesh.material.opacity = 0.95;
-                m.ring.material.opacity = 0.6;
-                m.mesh.scale.setScalar(1);
-            });
-            document.getElementById('info-panel').classList.remove('visible');
-            updateModeStatus('View reset successfully');
-        }
-        window.resetCamera = resetCamera;
-        
-        function toggleAutoRotate() {
-            if (isLocked) {
-                showError('Please start the experience first');
-                return;
-            }
-            autoRotate = !autoRotate;
-            controls.autoRotate = autoRotate;
-            const btn = document.querySelector('.control-btn[onclick="toggleAutoRotate()"]');
-            if (autoRotate) {
-                btn.classList.add('active');
-                updateModeStatus('Auto Rotate ON');
-            } else {
-                btn.classList.remove('active');
-                updateModeStatus('Auto Rotate OFF');
-            }
-        }
-        window.toggleAutoRotate = toggleAutoRotate;
-        
-        function nextMarker() {
-            if (isLocked) {
-                showError('Please start the experience first');
-                return;
-            }
-            const newIndex = (currentMarkerIndex + 1) % markerData.length;
-            selectMarker(newIndex);
-        }
-        window.nextMarker = nextMarker;
-        
-        function showHelp() {
-            document.getElementById('instructions').classList.add('visible');
-        }
-        window.showHelp = showHelp;
-        
         function updateModeStatus(text) {
             document.getElementById('mode-status').textContent = text;
         }
@@ -834,34 +865,75 @@
             setTimeout(() => errorDiv.style.display = 'none', 4000);
         }
         
-        // ===== UTILITIES =====
         function isMobile() {
             return window.innerWidth <= 768 || 
                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
         
-        // ===== PERFORMANCE OPTIMIZATION =====
-        function optimizePerformance() {
-            if (isMobile()) {
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-                brainGroup.scale.setScalar(0.85);
-            }
+        function deactivateGyro() {
+            gyroMode = false;
+            isGyroCalibrated = false;
+            controls.enabled = true;
+            window.removeEventListener('deviceorientation', handleGyro);
+            document.getElementById('gyro-btn').classList.remove('active');
+            document.getElementById('gyro-fab').classList.remove('active');
+            updateModeStatus('โหมดควบคุมปกติ');
         }
         
-        // ===== ANIMATION LOOP (60FPS LOCKED) =====
-        let lastTime = 0;
+        function handleGyro(event) {
+            if (!gyroMode) return;
+            
+            if (!isGyroCalibrated) {
+                gyroCalibration.alpha = event.alpha || 0;
+                gyroCalibration.beta = event.beta || 0;
+                gyroCalibration.gamma = event.gamma || 0;
+                isGyroCalibrated = true;
+                return;
+            }
+            
+            const alphaDelta = (event.alpha || 0) - gyroCalibration.alpha;
+            const betaDelta = (event.beta || 0) - gyroCalibration.beta;
+            const gammaDelta = (event.gamma || 0) - gyroCalibration.gamma;
+            
+            const lerpFactor = 0.28;
+            gyroAlpha = THREE.MathUtils.lerp(gyroAlpha, THREE.MathUtils.degToRad(alphaDelta), lerpFactor);
+            gyroBeta = THREE.MathUtils.lerp(gyroBeta, THREE.MathUtils.degToRad(betaDelta), lerpFactor);
+            gyroGamma = THREE.MathUtils.lerp(gyroGamma, THREE.MathUtils.degToRad(gammaDelta), lerpFactor);
+            
+            brainGroup.rotation.order = 'YXZ';
+            brainGroup.rotation.x = -gyroBeta;
+            brainGroup.rotation.y = -gyroAlpha;
+            brainGroup.rotation.z = gyroGamma * 0.5;
+        }
+        
+        // ===== INITIALIZATION =====
+        try {
+            setTimeout(() => {
+                document.getElementById('loading').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 800);
+            }, 2000);
+            
+            animate();
+            
+        } catch (error) {
+            showError(`Initialization Error: ${error.message}`);
+            console.error('Full Error:', error);
+        }
+        
         function animate(time) {
             requestAnimationFrame(animate);
             
-            // 60FPS throttle
             if (time - lastTime < 16.67) return;
             lastTime = time;
             
-            // Animate markers
             markers.forEach((m, i) => {
-                const pulse = Math.sin(time * 0.0018 + i * 0.5) * 0.15 + 0.85;
-                m.ring.scale.setScalar(pulse * (m.mesh.scale.x > 1 ? 1.3 : 1));
-                m.ring.rotation.z = time * 0.001;
+                if (m.mesh.visible) {
+                    const pulse = Math.sin(time * 0.0018 + i * 0.5) * 0.15 + 0.85;
+                    m.ring.scale.setScalar(pulse * (m.mesh.scale.x > 1 ? 1.3 : 1));
+                    m.ring.lookAt(camera.position);
+                }
             });
             
             if (!gyroMode) controls.update();
@@ -873,30 +945,10 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            optimizePerformance();
+            CONFIG.resolution = isMobile() ? 220 : 360;
         });
         
         renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
-        
-        // ===== INITIALIZATION =====
-        try {
-            optimizePerformance();
-            
-            // Hide loading screen
-            setTimeout(() => {
-                document.getElementById('loading').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('loading').style.display = 'none';
-                }, 800);
-            }, 2000);
-            
-            // Start animation
-            animate();
-            
-        } catch (error) {
-            showError(`Initialization Error: ${error.message}`);
-            console.error('Full Error:', error);
-        }
         
     </script>
 </body>
