@@ -2,626 +2,107 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- เพิ่ม meta สำหรับ iOS Safari -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>โมเดลหัวใจมนุษย์ 3D XR (Mobile Optimized)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Heart Anatomy Learning</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0c0c1a 100%);
-            font-family: 'Sarabun', sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-        }
-        #info {
-            position: absolute;
-            top: 15px;
-            width: 100%;
-            text-align: center;
-            color: #fff;
-            pointer-events: none;
-            z-index: 10;
-            text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
-            transition: opacity 0.5s;
-        }
-        h1 { margin: 0; font-weight: 700; color: #ff6b6b; font-size: 1.8rem;}
-        p { margin: 5px; font-size: 1rem; color: #ddd; }
-        canvas { display: block; outline: none; touch-action: none; }
+        body { margin: 0; background: #1a1a1a; font-family: 'Kanit', sans-serif; overflow: hidden; }
         
-        #controls {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: rgba(0,0,0,0.8);
-            padding: 12px;
-            border-radius: 10px;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            transition: opacity 0.5s;
+        /* ตั้งค่าหน้าจอแสดงผล */
+        model-viewer {
+            width: 100vw;
+            height: 100vh;
+            --poster-color: transparent;
         }
-        #controls button {
-            display: block;
-            width: 100%;
-            margin: 4px 0;
-            padding: 10px;
-            background: #c91e3a;
+
+        /* ส่วนหัวข้อ UI */
+        .header-ui {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
             color: white;
-            border: none;
-            border-radius: 5px;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* ปุ่มควบคุมด้านล่าง */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.3s;
-            pointer-events: auto;
-        }
-        #controls button:hover {
-            background: #ff4757;
-            transform: scale(1.05);
+            transition: 0.3s;
         }
 
-        /* --- UI ส่วนล่าง (Marker Navigation) --- */
-        #bottom-ui-container {
-            position: absolute;
-            bottom: 10px; /* ลดระยะขอบล่าง */
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-            z-index: 1000;
-            transition: opacity 0.3s;
-        }
+        .btn:hover { background: #ff4757; border-color: #ff4757; }
 
-        #info-panel {
-            background: rgba(0, 0, 0, 0.95);
-            padding: 15px 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            width: 60%;
-            max-width: 500px;
-            text-align: center;
-            color: white;
-            border: 1px solid #ff6b6b;
-            pointer-events: auto;
-            margin: 0 15px;
-            position: relative;
-        }
-        
-        .nav-btn {
-            background: rgba(0, 0, 0, 0.6);
-            color: #ff6b6b;
-            border: 2px solid #ff6b6b;
-            width: 50px;
-            height: 50px;
+        /* การปรับแต่ง Hotspot (จุดกด) */
+        .dot {
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            pointer-events: auto;
-            transition: all 0.3s;
-            backdrop-filter: blur(5px);
-        }
-        .nav-btn:hover {
-            background: #ff6b6b;
-            color: white;
-            transform: scale(1.1);
-        }
-        .nav-btn:active { transform: scale(0.9); }
-
-        #info-panel h2 { margin: 0 0 10px 0; color: #ff6b6b; font-size: 24px; font-weight: 600; }
-        #info-panel p { margin: 8px 0; color: #eee; font-size: 16px; line-height: 1.6; }
-
-        /* --- CSS ปุ่มเปลี่ยนฉาก (Scene Navigation) --- */
-        .scene-nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.6);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            font-size: 40px;
-            padding: 15px 20px;
-            cursor: pointer;
-            z-index: 2000;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(4px);
-        }
-        .scene-nav-btn:hover {
-            background: rgba(255, 107, 107, 0.8);
-            color: white;
-            border-color: transparent;
-            transform: translateY(-50%) scale(1.1);
-            box-shadow: 0 0 15px rgba(255, 107, 107, 0.6);
-        }
-        .prev-scene { left: 20px; }
-        .next-scene { right: 20px; }
-
-        /* Marker Styles */
-        #marker-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .marker-container { position: absolute; cursor: pointer; pointer-events: auto; transition: all 0.3s; z-index: 101; }
-        .marker-container:hover { transform: scale(1.2); }
-        .marker-number {
-            width: 36px; height: 36px; border-radius: 50%;
-            background: linear-gradient(135deg, #ff6b6b, #c91e3a);
-            color: white; font-weight: bold; font-size: 18px;
-            display: flex; align-items: center; justify-content: center;
             border: 2px solid white;
-            box-shadow: 0 0 12px rgba(255,107,107,0.7);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-        #legend {
-            position: absolute; top: 50%; left: 20px; transform: translateY(-50%);
-            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px;
-            color: white; font-size: 12px; z-index: 1000;
-            backdrop-filter: blur(10px); transition: opacity 0.5s;
-        }
-        #legend h3 { margin: 0 0 10px 0; color: #ff6b6b; font-size: 14px; }
-        #legend div { margin: 5px 0; }
-        #legend span { display: inline-block; width: 20px; height: 3px; margin-right: 5px; vertical-align: middle; }
-        #ar-button { background: #2ed573 !important; position: absolute; top: 20px; left: 20px; z-index: 1001; display: none; }
-        .hidden { opacity: 0 !important; pointer-events: none !important; }
-
-        /* --- Media Queries สำหรับมือถือ --- */
-        @media screen and (max-width: 768px) {
-            #info-panel {
-                width: 85% !important; /* กว้างเต็มจอเกือบสุด */
-                max-width: 90% !important;
-                padding: 12px 15px !important;
-                border-radius: 12px !important;
-            }
-            
-            #info-panel h2 {
-                font-size: 18px !important; /* ลดขนาดหัวข้อ */
-                margin-bottom: 8px !important;
-            }
-            
-            #info-panel p {
-                font-size: 13px !important; /* ลดขนาดข้อความ */
-                line-height: 1.5 !important;
-                margin: 5px 0 !important;
-            }
-            
-            .nav-btn {
-                width: 55px !important; /* ปุ่มใหญ่ขึ้นสำหรับนิ้ว */
-                height: 55px !important;
-                font-size: 26px !important;
-                margin: 0 8px !important;
-            }
-            
-            #controls {
-                padding: 10px !important;
-                top: 10px !important;
-                right: 10px !important;
-            }
-            
-            #controls button {
-                font-size: 12px !important;
-                padding: 8px 10px !important;
-                margin: 3px 0 !important;
-            }
-            
-            #legend {
-                font-size: 10px !important;
-                padding: 10px !important;
-                top: auto !important;
-                bottom: 10px !important;
-                left: 10px !important;
-                transform: none !important;
-                max-width: 130px !important;
-            }
-            
-            #info h1 {
-                font-size: 1.3rem !important; /* ลดหัวข้อบน */
-            }
-            
-            #info p {
-                font-size: 0.85rem !important;
-            }
-            
-            #bottom-ui-container {
-                bottom: 5px !important; /* ลดระยะขอบล่าง */
-            }
-            
-            .marker-number {
-                width: 30px !important; /* ลดขนาด marker */
-                height: 30px !important;
-                font-size: 15px !important;
-            }
-            
-            .scene-nav-btn {
-                font-size: 30px !important; /* ลดปุ่มเปลี่ยนฉาก */
-                padding: 10px 15px !important;
-            }
-            
-            .prev-scene { left: 10px !important; }
-            .next-scene { right: 10px !important; }
-        }
-
-        /* สำหรับมือถือจอเล็กมาก */
-        @media screen and (max-width: 480px) {
-            .nav-btn {
-                width: 50px !important;
-                height: 50px !important;
-                font-size: 22px !important;
-            }
-            
-            #info-panel {
-                width: 95% !important;
-                padding: 10px 12px !important;
-            }
-            
-            #info-panel h2 {
-                font-size: 16px !important;
-            }
+            background: #ff4757;
+            cursor: pointer;
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400 ;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div id="info">
-        <h1>โมเดลหัวใจมนุษย์ 3D XR</h1>
-        <p>คลิกซ้าย-ขวาริมจอเพื่อเปลี่ยนโมเดล | ปุ่มล่างเพื่อดูข้อมูล</p>
+    <div class="header-ui">
+        <h1 style="margin:0;">ระบบการทำงานของหัวใจ</h1>
+        <p style="opacity: 0.8;">สื่อการเรียนรู้แบบ WebXR (3D Interactive)</p>
     </div>
 
-      <!-- จากหัวใจ → ไปสมอง (ซ้าย), ไปปอด (ขวา) -->
-    <button class="scene-nav-btn prev-scene" onclick="window.location.href='Barin.html'" title="ไปโมเดลสมอง">❮</button>
-    <button class="scene-nav-btn next-scene" onclick="window.location.href='lungs.html'" title="ไปโมเดลปอด">❯</button>
-    
-    <button id="ar-button" onclick="enterAR()">เข้าโหมด AR</button>
+    <model-viewer 
+        id="heart"
+        src="scene.gltf" 
+        ar 
+        ar-modes="webxr scene-viewer quick-look" 
+        camera-controls 
+        shadow-intensity="1.5" 
+        shadow-softness="1"
+        auto-rotate 
+        exposure="1"
+        camera-orbit="45deg 75deg 2m">
 
-    <div id="controls">
-        <button onclick="resetView()">รีเซ็ตมุมมอง</button>
-        <button onclick="toggleRotation()">หยุด/เริ่มหมุนอัตโนมัติ</button>
-        <button onclick="toggleLabels()">เปิด/ปิดลูกศรชี้</button>
-    </div>
-
-    <div id="legend">
-        <h3>สีของตัวชี้</h3>
-        <div><span style="background: #ff6b6b;"></span>เส้นเลือดแดง</div>
-        <div><span style="background: #4ecdc4;"></span>เส้นเลือดดำ</div>
-        <div><span style="background: #ffe66d;"></span>ห้องหัวใจ</div>
-        <div><span style="background: #a8e6cf;"></span>เส้นเลือดเลี้ยงหัวใจ</div>
-    </div>
-
-    <div id="bottom-ui-container">
-        <button class="nav-btn" onclick="navigateMarker(-1)">❮</button>
-        <div id="info-panel">
-            <h2>หัวใจมนุษย์</h2>
-            <p>คลิกที่ลูกศรซ้าย-ขวา หรือกดตัวเลขเพื่อดูข้อมูล</p>
-            <p style="color: #888; font-size: 12px;">* มีจุดทั้งหมด 12 จุด</p>
+        <div class="controls">
+            <button class="btn" onclick="resetView()">รีเซ็ตมุมกล้อง</button>
+            <button class="btn" style="background: #2f3542;" onclick="toggleRotate()">เปิด/ปิด การหมุน</button>
         </div>
-        <button class="nav-btn" onclick="navigateMarker(1)">❯</button>
-    </div>
 
-    <canvas id="marker-canvas"></canvas>
+    </model-viewer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js "></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js "></script>
     <script>
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a1a);
-        scene.fog = new THREE.Fog(0x0a0a1a, 8, 30);
-        
-        const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 1.5, 12);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.xr.enabled = true;
-        document.body.appendChild(renderer.domElement);
-        
-        const markerCanvas = document.getElementById('marker-canvas');
-        const markerCtx = markerCanvas.getContext('2d');
-        markerCanvas.width = window.innerWidth;
-        markerCanvas.height = window.innerHeight;
-        
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        
-        const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        mainLight.position.set(6, 10, 6);
-        mainLight.castShadow = true;
-        scene.add(mainLight);
-        
-        const fillLight = new THREE.PointLight(0xffffff, 0.8, 50);
-        fillLight.position.set(0, 0, 10);
-        scene.add(fillLight);
-        
-        const heartGroup = new THREE.Group();
-        const heartMaterial = new THREE.MeshStandardMaterial({ color: 0xcc2e3e, roughness: 0.8, metalness: 0.02 });
-        
-        const lvGeo = new THREE.SphereGeometry(1.6, 64, 64);
-        const leftVentricle = new THREE.Mesh(lvGeo, heartMaterial);
-        leftVentricle.scale.set(1, 1.3, 0.9); leftVentricle.position.set(-0.3, 0, 0);
-        
-        const rvGeo = new THREE.SphereGeometry(1.3, 64, 64);
-        const rightVentricle = new THREE.Mesh(rvGeo, heartMaterial);
-        rightVentricle.scale.set(0.7, 1.1, 0.7); rightVentricle.position.set(0.7, -0.1, 0.2);
+        const modelViewer = document.querySelector("#heart");
 
-        const la = new THREE.Mesh(new THREE.SphereGeometry(0.8,32,32), heartMaterial);
-        la.scale.set(0.8,0.5,0.8); la.position.set(-0.4, 2.1, -0.4);
-        const ra = new THREE.Mesh(new THREE.SphereGeometry(0.75,32,32), heartMaterial);
-        ra.scale.set(0.8,0.5,0.8); ra.position.set(0.5, 2.1, -0.3);
-        
-        const arteryMat = new THREE.MeshStandardMaterial({ color: 0xcc2e3e, roughness: 0.6 });
-        const veinMat = new THREE.MeshStandardMaterial({ color: 0x4a7cdd, roughness: 0.6 });
-        
-        const aortaCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0,2.6,0), new THREE.Vector3(0,3.4,0), new THREE.Vector3(0.4,4.0,-0.4), new THREE.Vector3(1.0,4.3,-1.0)]);
-        const aorta = new THREE.Mesh(new THREE.TubeGeometry(aortaCurve, 32, 0.32, 16, false), arteryMat);
-        
-        const pulmoCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0.2,2.4,-0.1), new THREE.Vector3(0.7,3.0,-0.7), new THREE.Vector3(1.3,3.2,-1.3)]);
-        const pulmonary = new THREE.Mesh(new THREE.TubeGeometry(pulmoCurve, 32, 0.28, 16, false), arteryMat);
-        
-        const svc = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 2.2, 32), veinMat);
-        svc.position.set(-0.6, 2.8, 0.3); svc.rotation.z = -0.2;
-
-        heartGroup.add(leftVentricle, rightVentricle, la, ra, aorta, pulmonary, svc);
-        heartGroup.rotation.z = -0.3;
-        scene.add(heartGroup);
-
-        const fixedLabelPositions = {
-            1: { x: 85, y: 15 }, 2: { x: 75, y: 25 }, 3: { x: 15, y: 20 },
-            4: { x: 50, y: 85 }, 5: { x: 60, y: 50 }, 6: { x: 80, y: 55 },
-            7: { x: 30, y: 35 }, 8: { x: 70, y: 35 }, 9: { x: 20, y: 30 },
-            10: { x: 85, y: 30 }, 11: { x: 25, y: 60 }, 12: { x: 90, y: 45 }
-        };
-        
-        const markerData = [
-            { id: 1, name: "Arch of Aorta", pos: { x: 0.6, y: 4.2, z: -0.8 }, color: "#ff6b6b", type: "artery", desc: "โค้งของเอาตา แยกเป็นเส้นเลือดส่งเลือดไปแขน ลำคอ และสมอง" },
-            { id: 2, name: "Pulmonary Trunk", pos: { x: 0.9, y: 2.8, z: -0.8 }, color: "#ff6b6b", type: "artery", desc: "ลำต้นหลอดเลือดแดงปอด ส่งเลือดขาดออกซิเจนไปยังปอดทั้งสองข้าง" },
-            { id: 3, name: "Superior Vena Cava", pos: { x: -0.6, y: 3.5, z: 0.4 }, color: "#4ecdc4", type: "vein", desc: "หลอดเลือดดำใหญ่ส่วนบน รับเลือดจากศีรษะ ลำคอ และแขนทั้งสองกลับสู่หัวใจ" },
-            { id: 4, name: "Inferior Vena Cava", pos: { x: 0, y: -1.9, z: 0 }, color: "#4ecdc4", type: "vein", desc: "หลอดเลือดดำใหญ่ส่วนล่าง รับเลือดจากลำตัวและขาทั้งสองกลับสู่หัวใจ" },
-            { id: 5, name: "Left Ventricle", pos: { x: -0.5, y: 0, z: 0 }, color: "#ffe66d", type: "chamber", desc: "ห้องล่างซ้าย - ห้องสูบฉีดหลัก ผนังหนาที่สุด (10-15 มม.) ส่งเลือดออกซิเจนไปทั่วร่างกาย" },
-            { id: 6, name: "Right Ventricle", pos: { x: 0.8, y: -0.2, z: 0.3 }, color: "#ffe66d", type: "chamber", desc: "ห้องล่างขวา - สูบฉีดเลือดขาดออกซิเจนไปยังปอดเพื่อรับออกซิเจน" },
-            { id: 7, name: "Left Atrium", pos: { x: -0.4, y: 2.1, z: -0.4 }, color: "#ffe66d", type: "chamber", desc: "ห้องบนซ้าย - รับเลือดที่มีออกซิเจนจากปอดกลับเข้าสู่หัวใจ" },
-            { id: 8, name: "Right Atrium", pos: { x: 0.6, y: 2.1, z: -0.3 }, color: "#ffe66d", type: "chamber", desc: "ห้องบนขวา - รับเลือดดำจากทั่วร่างกายก่อนส่งไปปอด" },
-            { id: 9, name: "Left Auricle", pos: { x: -0.9, y: 2.3, z: 0.2 }, color: "#ffe66d", type: "chamber", desc: "หูหัวใจซ้าย - ส่วนขยายของห้องบนซ้าย ช่วยเพิ่มปริมาตร" },
-            { id: 10, name: "Right Auricle", pos: { x: 1.1, y: 2.0, z: 0.3 }, color: "#ffe66d", type: "chamber", desc: "หูหัวใจขวา - ส่วนขยายของห้องบนขวา มีลักษณะหูรูด" },
-            { id: 11, name: "LAD", pos: { x: -0.2, y: 0, z: 1.2 }, color: "#a8e6cf", type: "coronary", desc: "เส้นเลือดเลี้ยงหัวใจ LAD - เส้นสำคัญที่เลี้ยงกล้ามเนื้อหัวใจส่วนหน้าและกั้นกลาง" },
-            { id: 12, name: "RCA", pos: { x: 1.0, y: 0, z: 0.5 }, color: "#a8e6cf", type: "coronary", desc: "เส้นเลือดเลี้ยงหัวใจ RCA - แยกเลี้ยงห้องล่างขวา ห้องบนขวา และระบบไฟฟ้าหัวใจ" }
-        ];
-
-        let showLabels = true;
-        let activeMarker = null;
-        let currentMarkerIndex = -1;
-        let isARMode = false;
-        let autoHideTimer = null;
-        let uiVisible = true;
-        const markerElements = {};
-        
-        markerData.forEach((data, index) => {
-            const container = document.createElement('div');
-            container.className = 'marker-container';
-            const number = document.createElement('div');
-            number.className = 'marker-number';
-            number.style.background = `linear-gradient(135deg, ${data.color}, #c91e3a)`;
-            number.textContent = data.id;
-            container.appendChild(number);
-            container.style.display = 'none';
-            document.body.appendChild(container);
-            
-            const fixedPos = fixedLabelPositions[data.id];
-            container.style.left = `${fixedPos.x}%`;
-            container.style.top = `${fixedPos.y}%`;
-            container.style.transform = 'translate(-50%, -50%)';
-            markerElements[data.id] = { container, data, index };
-            container.addEventListener('click', () => { selectMarkerByIndex(index); });
-        });
-
-        // --- ตรวจสอบว่าเป็นมือถือหรือไม่ ---
-        function isMobile() {
-            return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        function resetView() {
+            modelViewer.cameraOrbit = "45deg 75deg 2m";
         }
 
-        // --- ปรับขนาดโมเดลสำหรับมือถือ ---
-        function adjustForMobile() {
-            if (isMobile()) {
-                heartGroup.scale.set(0.7, 0.7, 0.7); // ลดขนาดโมเดลลง 30%
-                camera.position.set(0, 1.5, 15); // ถอยกล้องออกไปอีกนิด
-            }
-        }
-
-        // --- Marker Navigation ---
-        function navigateMarker(direction) {
-            let newIndex = currentMarkerIndex + direction;
-            if (newIndex < 0) newIndex = markerData.length - 1;
-            if (newIndex >= markerData.length) newIndex = 0;
-            selectMarkerByIndex(newIndex);
-        }
-        window.navigateMarker = navigateMarker;
-
-        function selectMarkerByIndex(index) {
-            currentMarkerIndex = index;
-            const data = markerData[index];
-            clearTimeout(autoHideTimer);
-            showInfo(data);
-            showUI();
-            autoHideUI();
-        }
-
-        function showInfo(data) {
-            const panel = document.getElementById('info-panel');
-            panel.innerHTML = `
-                <h2>${data.id}. ${data.name}</h2>
-                <p>${data.desc}</p>
-                <p style="color: #999; font-size: 12px; margin-top: 10px;">ประเภท: ${getTypeLabel(data.type)}</p>
-                <div style="font-size:12px; margin-top:5px; color:#ff6b6b;">(${currentMarkerIndex + 1} / ${markerData.length})</div>
-            `;
-            Object.values(markerElements).forEach(el => {
-                el.container.style.filter = 'brightness(1)';
-                el.container.style.transform = 'translate(-50%, -50%) scale(1)';
-            });
-            const el = markerElements[data.id];
-            el.container.style.filter = 'brightness(1.5) drop-shadow(0 0 10px #fff)';
-            el.container.style.transform = 'translate(-50%, -50%) scale(1.3)';
-            activeMarker = data.id;
-        }
-
-        function getTypeLabel(type) {
-            const labels = { artery: 'เส้นเลือดแดง', vein: 'เส้นเลือดดำ', chamber: 'ห้องหัวใจ', coronary: 'เส้นเลือดเลี้ยงหัวใจ' };
-            return labels[type] || 'อื่นๆ';
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') navigateMarker(1);
-            if (e.key === 'ArrowLeft') navigateMarker(-1);
-        });
-
-        function updateMarkers() {
-            markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
-            if (!showLabels) {
-                Object.values(markerElements).forEach(el => el.container.style.display = 'none');
-                return;
-            }
-            markerData.forEach(data => {
-                const vector = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
-                vector.applyMatrix4(heartGroup.matrixWorld);
-                vector.project(camera);
-                if (vector.z > 1) {
-                    markerElements[data.id].container.style.display = 'none';
-                    return;
-                }
-                const endX = (vector.x * 0.5 + 0.5) * window.innerWidth;
-                const endY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-                
-                const fixedPos = fixedLabelPositions[data.id];
-                const startX = (fixedPos.x / 100) * window.innerWidth;
-                const startY = (fixedPos.y / 100) * window.innerHeight;
-
-                const worldPos = new THREE.Vector3(data.pos.x, data.pos.y, data.pos.z);
-                worldPos.applyMatrix4(heartGroup.matrixWorld);
-                const distance = camera.position.distanceTo(worldPos);
-
-                markerCtx.strokeStyle = data.color;
-                markerCtx.lineWidth = 3;
-                markerCtx.globalAlpha = Math.max(0.3, 1 - distance / 15);
-                markerCtx.beginPath(); markerCtx.moveTo(startX, startY); markerCtx.lineTo(endX, endY); markerCtx.stroke();
-                markerCtx.fillStyle = data.color; markerCtx.beginPath(); markerCtx.arc(endX, endY, 5, 0, Math.PI * 2); markerCtx.fill();
-                
-                const markerEl = markerElements[data.id].container;
-                markerEl.style.display = 'block';
-                markerEl.style.opacity = Math.max(0.4, 1 - distance / 12);
-            });
-        }
-
-        // --- ปรับระยะเวลาซ่อน UI ให้นานขึ้นบนมือถือ ---
-        function autoHideUI() {
-            clearTimeout(autoHideTimer);
-            autoHideTimer = setTimeout(() => {
-                if (!isARMode && !isMobile()) { // ซ่อน UI อัตโนมัติเฉพาะบน desktop
-                    hideUI();
-                }
-                // บนมือถือจะไม่ซ่อน UI อัตโนมัติ เพื่อป้องกันข้อมูลหาย
-            }, 10000); // เพิ่มเป็น 10 วินาที
-        }
-
-        // --- ซ่อน UI แต่ไม่ซ่อนข้อมูล marker ---
-        function hideUI() {
-            uiVisible = false;
-            document.getElementById('info').classList.add('hidden');
-            document.getElementById('controls').classList.add('hidden');
-            document.getElementById('legend').classList.add('hidden');
-            // ไม่ซ่อน bottom-ui-container เพราะมีข้อมูล marker สำคัญ
-            document.querySelectorAll('.scene-nav-btn').forEach(b => b.classList.add('hidden'));
-        }
-
-        function showUI() {
-            uiVisible = true;
-            document.getElementById('info').classList.remove('hidden');
-            document.getElementById('controls').classList.remove('hidden');
-            document.getElementById('legend').classList.remove('hidden');
-            document.getElementById('bottom-ui-container').classList.remove('hidden');
-            document.querySelectorAll('.scene-nav-btn').forEach(b => b.classList.remove('hidden'));
-        }
-
-        function resetAutoHide() {
-            clearTimeout(autoHideTimer);
-            if (!uiVisible) showUI();
-            autoHideUI();
-        }
-
-        async function checkARSupport() { 
-            if ('xr' in navigator) { 
-                try { 
-                    const s = await navigator.xr.isSessionSupported('immersive-ar'); 
-                    if(s) document.getElementById('ar-button').style.display='block'; 
-                } catch(e){} 
-            } 
-        }
-        checkARSupport();
-
-        async function enterAR() {
-            if (!navigator.xr) return;
-            const session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] });
-            renderer.xr.setSession(session); isARMode = true;
-            heartGroup.scale.set(0.15,0.15,0.15); heartGroup.position.set(0,0,-1);
-            document.getElementById('info').style.display='none'; document.getElementById('legend').style.display='none';
-            document.querySelectorAll('.scene-nav-btn').forEach(b => b.style.display='none');
-            session.addEventListener('end', () => { 
-                isARMode=false; heartGroup.scale.set(1,1,1); heartGroup.position.set(0,0,0); 
-                document.getElementById('info').style.display='block'; document.getElementById('legend').style.display='block'; 
-                document.querySelectorAll('.scene-nav-btn').forEach(b => b.style.display='block');
-                adjustForMobile(); // กลับมาปรับขนาดตามอุปกรณ์
-            });
-        }
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        
-        let time = 0; 
         let rotating = true;
-        
-        // ปรับการควบคุมสำหรับ touch screen
-        ['click','touchstart','touchmove','mousemove'].forEach(e => document.addEventListener(e, resetAutoHide));
-        
-        window.toggleRotation = () => { rotating = !rotating; resetAutoHide(); };
-        window.resetView = () => { 
-            camera.position.set(0,1.5,12); controls.reset(); currentMarkerIndex = -1;
-            document.getElementById('info-panel').innerHTML = `<h2>หัวใจมนุษย์</h2><p>คลิกที่ลูกศรซ้าย-ขวา เพื่อดูข้อมูล</p>`;
-            Object.values(markerElements).forEach(el => el.container.style.filter='brightness(1)');
-            adjustForMobile(); // รีเซ็ตขนาดตามอุปกรณ์
-            resetAutoHide(); 
-        };
-        window.toggleLabels = () => { showLabels = !showLabels; resetAutoHide(); };
-        window.enterAR = enterAR;
-
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.01;
-            const beat = Math.sin(time * 3) * 0.5 + 0.5;
-            const baseScale = isMobile() ? 0.7 : 1.0; // ปรับ base scale ตามอุปกรณ์
-            const scale = isARMode ? 0.15 : (baseScale + (beat * 0.04));
-            heartGroup.scale.set(scale, scale, scale);
-            if(rotating && !isARMode) heartGroup.rotation.y += 0.004;
-            controls.update();
-            renderer.render(scene, camera);
-            updateMarkers();
+        function toggleRotate() {
+            rotating = !rotating;
+            modelViewer.autoRotate = rotating;
         }
-        
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            markerCanvas.width = window.innerWidth;
-            markerCanvas.height = window.innerHeight;
-            adjustForMobile(); // ปรับใหม่เมื่อหมุนจอ
-        });
-
-        // เริ่มต้นโปรแกรม
-        adjustForMobile(); // ปรับขนาดตอนเริ่มต้น
-        selectMarkerByIndex(0);
-        animate();
     </script>
 </body>
 </html>
