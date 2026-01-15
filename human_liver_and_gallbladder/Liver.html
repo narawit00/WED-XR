@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Human Liver AR Experience</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+    <style>
+        :root {
+            --primary-green: #4CAF50;
+            --glass: rgba(255, 255, 255, 0.85);
+            --accent-red: #ff4d4d;
+        }
+
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #f0f0f0; }
+        model-viewer { width: 100vw; height: 100vh; background-color: #f0f0f0; }
+
+        .hotspot {
+            display: block; width: 20px; height: 20px; border-radius: 50%;
+            border: 2px solid #fff; background-color: var(--primary-green);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.3s;
+        }
+
+        .hotspot:not([data-visible]) { opacity: 0; pointer-events: none; }
+        .hotspot.active { background-color: var(--accent-red); transform: scale(1.3); }
+
+        .annotation {
+            background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            color: #333; display: block; font-family: sans-serif; font-size: 12px;
+            font-weight: 700; left: calc(100% + 10px); padding: 6px 12px;
+            position: absolute; top: 50%; transform: translateY(-50%);
+            white-space: nowrap; pointer-events: none;
+        }
+
+        .side-bar {
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 12px; z-index: 100;
+        }
+
+        .menu-btn {
+            width: 65px; height: 55px; background: var(--glass); backdrop-filter: blur(10px);
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; color: #555; cursor: pointer; transition: 0.3s;
+        }
+
+        .menu-btn.active { background: var(--primary-green); color: white; border: none; }
+
+        .info-sheet {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 450px; background: var(--glass); backdrop-filter: blur(20px);
+            border-radius: 24px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 100;
+        }
+
+        .info-title { margin: 0; font-size: 20px; color: #333; }
+        .info-desc { margin: 8px 0; font-size: 14px; color: #666; line-height: 1.4; min-height: 40px; }
+
+        .action-bar { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-action { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-isolate { background: #e0e0e0; color: #333; }
+        .btn-ar { background: var(--primary-green); color: white; }
+    </style>
+</head>
+<body>
+
+    <model-viewer 
+        id="liver-model"
+        src="scene.gltf" 
+        ar ar-modes="webxr scene-viewer quick-look" 
+        camera-controls shadow-intensity="2" environment-image="neutral"
+        exposure="1.2" auto-rotate touch-action="pan-y">
+
+        <button class="hotspot" slot="hotspot-liver-right" 
+            data-position="0.05m 0.05m 0.05m" data-normal="0m 0m 1m" 
+            data-title="Right Lobe (ตับกลีบขวา)" 
+            data-description="เป็นส่วนที่ใหญ่ที่สุดของตับ ทำหน้าที่ผลิตน้ำดีและกรองสารพิษออกจากกระแสเลือด">
+            <div class="annotation">Right Lobe</div>
+        </button>
+
+        <button class="hotspot" slot="hotspot-gallbladder" 
+            data-position="-0.02m -0.05m 0.05m" data-normal="0m 0m 1m" 
+            data-title="Gallbladder (ถุงน้ำดี)" 
+            data-description="ทำหน้าที่กักเก็บน้ำดีที่ผลิตจากตับ เพื่อใช้ในการย่อยไขมันในลำไส้เล็ก">
+            <div class="annotation">Gallbladder</div>
+        </button>
+
+         <div class="side-bar">
+          <div class="menu-btn"><span></span>lungs</div>
+    
+           <div class="menu-btn active"><span></span>Liver</div>
+    
+         <div class="menu-btn" onclick="location.href='../human_heart/Hard.html'">
+        <span></span>Hard
+    </div>
+</div>
+<div class="side-bar">
+    <div class="menu-btn" onclick="location.href='../human_lungs/lungs.html'"><span></span>Lungs</div>
+    <div class="menu-btn active"><span></span>Liver</div>
+    <div class="menu-btn" onclick="location.href='../human_heart/Hard.html'"><span></span>Circulatory</div>
+</div>
+
+        <div class="info-sheet">
+            <h2 id="display-title" class="info-title">Human Liver (ตับ)</h2>
+            <p id="display-focus" style="font-size: 12px; color: var(--primary-green); font-weight: bold; margin: 0;">FOCUS: GENERAL</p>
+            <p id="display-desc" class="info-desc">จิ้มที่จุดสีเขียวบนโมเดลเพื่อดูรายละเอียดของส่วนต่างๆ ในตับ</p>
+            <div class="action-bar">
+                <button class="btn-action btn-isolate" onclick="toggleRotate()">Pause Rotate</button>
+                <button class="btn-action btn-ar" onclick="activateAR()">View in Room (AR)</button>
+            </div>
+        </div>
+
+    </model-viewer>
+
+    <script>
+        const modelViewer = document.querySelector("#liver-model");
+        const displayTitle = document.querySelector("#display-title");
+        const displayDesc = document.querySelector("#display-desc");
+        const displayFocus = document.querySelector("#display-focus");
+
+        const hotspots = document.querySelectorAll(".hotspot");
+        hotspots.forEach(hotspot => {
+            hotspot.addEventListener('click', () => {
+                hotspots.forEach(h => h.classList.remove('active'));
+                hotspot.classList.add('active');
+                displayTitle.innerText = hotspot.dataset.title;
+                displayDesc.innerText = hotspot.dataset.description;
+                displayFocus.innerText = `FOCUS: ${hotspot.dataset.title.split(' ')[0]}`;
+                modelViewer.autoRotate = false;
+            });
+        });
+
+        function activateAR() { modelViewer.activateAR(); }
+
+        let isRotating = true;
+        function toggleRotate() {
+            isRotating = !isRotating;
+            modelViewer.autoRotate = isRotating;
+            // แก้ไขข้อความปุ่ม
+            event.target.innerText = isRotating ? "Pause Rotate" : "Resume Rotate";
+        }
+    </script>
+</body>
+</html>
