@@ -8,7 +8,8 @@
     <style>
         :root {
             --primary-blue: #2196F3;
-            --glass: rgba(255, 255, 255, 0.8);
+            --glass: rgba(255, 255, 255, 0.85);
+            --accent-red: #ff4d4d;
         }
 
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #f0f0f0; }
@@ -19,89 +20,78 @@
             background-color: #f0f0f0;
         }
 
-        /* เมนูด้านข้าง (Skeletal, Muscular, Circulatory) */
-        .side-bar {
+        /* --- Styling สำหรับจุด Hotspots --- */
+        .hotspot {
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            background-color: var(--primary-blue);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        /* เมื่อจิ้มแล้วให้จุดขยายใหญ่ขึ้นเล็กน้อย */
+        .hotspot:not([data-visible]) {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .hotspot.active {
+            background-color: var(--accent-red);
+            transform: scale(1.3);
+        }
+
+        /* ป้ายชื่อที่เด้งออกมาจากจุด (Annotation) */
+        .annotation {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            color: #333;
+            display: block;
+            font-family: sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            left: calc(100% + 10px);
+            padding: 6px 12px;
             position: absolute;
-            left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 100;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* UI Elements อื่นๆ */
+        .side-bar {
+            position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 12px; z-index: 100;
         }
 
         .menu-btn {
-            width: 55px;
-            height: 55px;
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.3);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-            color: #555;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            cursor: pointer;
+            width: 55px; height: 55px; background: var(--glass); backdrop-filter: blur(10px);
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; color: #555; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer;
         }
 
-        .menu-btn.active {
-            background: var(--primary-blue);
-            color: white;
-            border: none;
-        }
+        .menu-btn.active { background: var(--primary-blue); color: white; border: none; }
 
-        .menu-btn i { font-size: 20px; margin-bottom: 2px; }
-
-        /* แผงข้อมูลด้านล่าง (Bottom Sheet) */
         .info-sheet {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 450px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            z-index: 100;
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 450px; background: var(--glass); backdrop-filter: blur(20px);
+            border-radius: 24px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); z-index: 100;
         }
 
-        .info-header { display: flex; justify-content: space-between; align-items: flex-start; }
         .info-title { margin: 0; font-size: 20px; color: #333; }
-        .info-desc { margin: 8px 0; font-size: 14px; color: #666; line-height: 1.4; }
+        .info-desc { margin: 8px 0; font-size: 14px; color: #666; line-height: 1.4; min-height: 40px; }
 
         .action-bar { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-action {
-            flex: 1;
-            padding: 12px;
-            border-radius: 12px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+        .btn-action { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
         .btn-isolate { background: #e0e0e0; color: #333; }
         .btn-ar { background: var(--primary-blue); color: white; }
 
-        /* ปุ่มสำหรับโหมด AR โดยเฉพาะ */
-        #ar-button {
-            background-color: white;
-            border-radius: 8px;
-            border: none;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
     </style>
 </head>
 <body>
@@ -118,21 +108,42 @@
         auto-rotate
         touch-action="pan-y">
 
+        <button class="hotspot" slot="hotspot-aorta" 
+            data-position="0.02m 0.12m 0.05m" data-normal="0m 0m 1m" 
+            data-title="Aorta (เอออร์ตา)" 
+            data-description="หลอดเลือดแดงใหญ่ที่สุดในร่างกาย ทำหน้าที่ส่งเลือดแดงไปเลี้ยงส่วนต่างๆ ของร่างกาย">
+            <div class="annotation">Aorta</div>
+        </button>
+
+        <button class="hotspot" slot="hotspot-left-atrium" 
+            data-position="-0.05m 0.05m 0.02m" data-normal="0m 0m 1m" 
+            data-title="Left Atrium (หัวใจห้องบนซ้าย)" 
+            data-description="รับเลือดที่มีออกซิเจนสูงจากปอด แล้วส่งต่อไปยังหัวใจห้องล่างซ้าย">
+            <div class="annotation">Left Atrium</div>
+        </button>
+
+        <button class="hotspot" slot="hotspot-right-ventricle" 
+            data-position="0.04m -0.02m 0.08m" data-normal="0m 0m 1m" 
+            data-title="Right Ventricle (หัวใจห้องล่างขวา)" 
+            data-description="ทำหน้าที่รับเลือดดำจากห้องบนขวา แล้วฉีดเลือดออกไปยังปอดเพื่อฟอกเลือด">
+            <div class="annotation">Right Ventricle</div>
+        </button>
+
         <div class="side-bar">
-            <div class="menu-btn"><span>💀</span>Skeletal</div>
-            <div class="menu-btn"><span>💪</span>Muscular</div>
-            <div class="menu-btn active"><span>❤️</span>Circulatory</div>
+            <div class="menu-btn"><span></span>Skeletal</div>
+            <div class="menu-btn"><span></span>Muscular</div>
+            <div class="menu-btn active"><span></span>Circulatory</div>
         </div>
 
         <div class="info-sheet">
             <div class="info-header">
                 <div>
-                    <h2 class="info-title">Human Heart (หัวใจ)</h2>
-                    <p style="font-size: 12px; color: var(--primary-blue); font-weight: bold; margin: 0;">FOCUS: ANATOMY</p>
+                    <h2 id="display-title" class="info-title">Human Heart (หัวใจ)</h2>
+                    <p id="display-focus" style="font-size: 12px; color: var(--primary-blue); font-weight: bold; margin: 0;">FOCUS: GENERAL</p>
                 </div>
             </div>
-            <p class="info-desc">
-                อวัยวะที่ประกอบด้วยกล้ามเนื้อ ทำหน้าที่สูบฉีดเลือดไปยังส่วนต่างๆ ของร่างกาย โดยรับเลือดที่มีออกซิเจนต่ำจากร่างกายเข้าสู่หัวใจห้องบนขวา
+            <p id="display-desc" class="info-desc">
+                จิ้มที่จุดสีฟ้าบนโมเดลเพื่อดูรายละเอียดของส่วนต่างๆ ในหัวใจ
             </p>
             <div class="action-bar">
                 <button class="btn-action btn-isolate" onclick="toggleRotate()">Pause Rotate</button>
@@ -144,6 +155,30 @@
 
     <script>
         const modelViewer = document.querySelector("#heart-model");
+        const displayTitle = document.querySelector("#display-title");
+        const displayDesc = document.querySelector("#display-desc");
+        const displayFocus = document.querySelector("#display-focus");
+
+        // ฟังก์ชันจัดการเมื่อจิ้มที่จุด Hotspot
+        const hotspots = document.querySelectorAll(".hotspot");
+        hotspots.forEach(hotspot => {
+            hotspot.addEventListener('click', () => {
+                // เปลี่ยนสีปุ่มที่เลือก
+                hotspots.forEach(h => h.classList.remove('active'));
+                hotspot.classList.add('active');
+
+                // ดึงข้อมูลจาก Data Attribute มาโชว์ที่หน้าจอ
+                const title = hotspot.dataset.title;
+                const desc = hotspot.dataset.description;
+
+                displayTitle.innerText = title;
+                displayDesc.innerText = desc;
+                displayFocus.innerText = `FOCUS: ${title.split(' ')[0]}`;
+
+                // หยุดหมุนชั่วคราวเพื่อให้ดูง่าย
+                modelViewer.autoRotate = false;
+            });
+        });
 
         function activateAR() {
             modelViewer.activateAR();
