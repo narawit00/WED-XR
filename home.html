@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AR ANATOMY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Prompt', 'Kanit', sans-serif;
+        }
+
+        body {
+            background: #ffffff;
+        }
+
+        /* Container หลัก - เต็มจอเสมอ */
+        .container {
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* สำหรับ mobile ที่มี dynamic viewport */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: clamp(24px, 5vh, 48px) clamp(20px, 5vw, 48px);
+            position: relative;
+        }
+
+        /* ส่วนบน - ปุ่มความช่วยเหลือ */
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+            flex-shrink: 0;
+        }
+
+        .help-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            text-decoration: none;
+            color: #1a1a1a;
+        }
+
+        .help-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .help-icon {
+            width: clamp(36px, 8vw, 48px);
+            height: clamp(36px, 8vw, 48px);
+            border: 2px solid #1a1a1a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: 500;
+        }
+
+        .help-text {
+            font-size: clamp(11px, 2.5vw, 14px);
+            color: #1a1a1a;
+            font-weight: 400;
+            white-space: nowrap;
+        }
+
+        /* ส่วนกลาง - โลโก้และชื่อแอป */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .logo-text {
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .logo-text h1 {
+            font-size: clamp(40px, 12vw, 120px);
+            font-weight: 300;
+            letter-spacing: clamp(6px, 2vw, 16px);
+            color: #1a1a1a;
+            margin-bottom: clamp(4px, 1vh, 12px);
+        }
+
+        .logo-text h2 {
+            font-size: clamp(28px, 8vw, 80px);
+            font-weight: 400;
+            letter-spacing: clamp(3px, 1vw, 8px);
+            color: #1a1a1a;
+        }
+
+        /* ส่วนล่าง - ปุ่มเริ่มต้น */
+        .footer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(12px, 3vh, 20px);
+            flex-shrink: 0;
+            padding-bottom: clamp(20px, 5vh, 40px);
+        }
+
+        .start-btn {
+            width: 100%;
+            max-width: min(320px, 80vw);
+            padding: clamp(16px, 4vh, 24px) clamp(32px, 8vw, 64px);
+            background: #2d2d2d;
+            color: #ffffff;
+            border: none;
+            border-radius: clamp(10px, 2vw, 16px);
+            font-size: clamp(16px, 4vw, 22px);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .start-btn:hover {
+            background: #1a1a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .start-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .login-text {
+            font-size: clamp(13px, 3vw, 16px);
+            color: #666666;
+            text-align: center;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .login-text:hover {
+            color: #1a1a1a;
+        }
+
+        .login-text strong {
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container > * {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .header { animation-delay: 0.1s; }
+        .main-content { animation-delay: 0.2s; }
+        .footer { animation-delay: 0.3s; }
+
+        /* ปรับสำหรับหน้าจอแนวนอน (Landscape) */
+        @media (orientation: landscape) and (max-height: 500px) {
+            .container {
+                padding: 16px 32px;
+            }
+
+            .logo-text h1 {
+                font-size: clamp(32px, 10vh, 60px);
+                margin-bottom: 4px;
+            }
+
+            .logo-text h2 {
+                font-size: clamp(24px, 8vh, 48px);
+            }
+
+            .start-btn {
+                padding: 12px 40px;
+                font-size: 16px;
+            }
+
+            .footer {
+                gap: 8px;
+                padding-bottom: 16px;
+            }
+        }
+
+        /* สำหรับจอใหญ่มาก (PC Full HD+) */
+        @media (min-width: 1920px) {
+            .logo-text h1 {
+                font-size: 140px;
+                letter-spacing: 20px;
+            }
+
+            .logo-text h2 {
+                font-size: 100px;
+                letter-spacing: 12px;
+            }
+        }
+
+        /* สำหรับจอเล็กมาก */
+        @media (max-width: 320px) {
+            .container {
+                padding: 20px 16px;
+            }
+        }
+
+        /* ป้องกันการเลือกข้อความ (ดูเหมือนแอปจริง) */
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* อนุญาตให้เลือกข้อความในบางส่วน */
+        .login-text {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <a href="#" class="help-btn" onclick="showHelp(); return false;">
+                <div class="help-icon">?</div>
+                <span class="help-text">ความช่วยเหลือ</span>
+            </a>
+        </header>
+
+        <main class="main-content">
+            <div class="logo-text">
+                <h1>AR</h1>
+                <h2>ANATOMY</h2>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <button class="start-btn" onclick="startApp()">เริ่ม !</button>
+        </footer>
+    </div>
+
+    <script>
+        // ฟังก์ชันเริ่มต้นใช้งานแอป
+        function startApp() {
+            const btn = document.querySelector('.start-btn');
+            // เอฟเฟกต์ปุ่มยุบลง
+            btn.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                btn.style.transform = '';
+                console.log('เริ่มต้นใช้งาน AR ANATOMY!');
+                
+                // --- แก้ไขตรงนี้ครับ ---
+                // สั่งให้เปลี่ยนหน้าไปที่ไฟล์ Ar_view.html
+                window.location.href = 'Ar_view.html'; 
+                
+            }, 150);
+        }
+
+        // ฟังก์ชันแสดงหน้า login
+        function showLogin() {
+            console.log('ไปยังหน้า Login');
+        }
+
+        // ฟังก์ชันแสดงความช่วยเหลือ
+        function showHelp() {
+            console.log('แสดงความช่วยเหลือ');
+            alert("กดปุ่ม 'เริ่ม !' เพื่อเข้าสู่โหมดดูโมเดล 3 มิติ");
+        }
+
+        // จัดการกับการเปลี่ยนขนาดจอ
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                // รีเฟรชค่า viewport สำหรับ mobile
+                document.querySelector('.container').style.height = window.innerHeight + 'px';
+            }, 100);
+        });
+
+        // สำหรับ iOS Safari
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                document.querySelector('.container').style.height = window.innerHeight + 'px';
+            }, 100);
+        });
+
+        // ตรวจสอบการสนับสนุน AR (Optional)
+        if ('xr' in navigator) {
+            navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                if (supported) {
+                    console.log('อุปกรณ์นี้รองรับ AR');
+                }
+            }).catch(() => {
+                console.log('ไม่สามารถตรวจสอบการสนับสนุน AR ได้');
+            });
+        }
+
+        // ป้องกันการ scroll bounce
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>
