@@ -130,31 +130,58 @@
         .ar-ctrl-btn svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
         #btn-freeze.frozen { background:rgba(24,71,201,0.4); border-color:rgba(24,71,201,0.6); }
 
-        /* ─── Annotation Dots ─────────────────────────────────── */
-        #ann-layer { position:fixed; inset:0; z-index:120; pointer-events:none; }
-        .ann-dot {
-            position:absolute; transform:translate(-50%,-50%);
-            pointer-events:auto; cursor:pointer;
+        /* ─── Annotation Dots (model-viewer hotspots) ────────── */
+        .ann-hotspot {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: block;
+            width: 20px;
+            height: 20px;
+            position: relative;
         }
-        .ann-dot-core {
-            width:10px; height:10px;
-            background:var(--accent); border:2.5px solid #fff;
-            border-radius:50%; position:relative; z-index:2;
-            box-shadow:0 2px 8px rgba(24,71,201,0.45);
-            transition:transform 0.25s var(--ease-spring);
+        
+        .ann-hotspot .ann-dot-core {
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border: 2.5px solid #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 8px rgba(24, 71, 201, 0.45);
+            transition: transform 0.25s var(--ease-spring);
         }
-        .ann-dot::before {
-            content:''; position:absolute;
-            inset:-8px; border-radius:50%;
-            background:rgba(24,71,201,0.14);
-            animation:annPulse 2.6s ease-in-out infinite;
+        
+        .ann-hotspot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(24, 71, 201, 0.14);
+            animation: annPulse 2.6s ease-in-out infinite;
         }
+        
         @keyframes annPulse {
-            0%,100% { transform:scale(1); opacity:.7; }
-            50%      { transform:scale(2); opacity:0; }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+            50% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
-        .ann-dot:hover .ann-dot-core { transform:scale(1.5); }
-        .ann-dot.selected .ann-dot-core { background:#fff; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-ring); }
+        
+        .ann-hotspot:hover .ann-dot-core {
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+        
+        .ann-hotspot.selected .ann-dot-core {
+            background: #fff;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-ring);
+        }
 
         /* ─── Info Card ───────────────────────────────────────── */
         #info-card {
@@ -535,11 +562,12 @@ const ORGANS = {
         modelPath: 'brain/scene.gltf',
         nameEN: 'Brain', nameTH: 'สมอง', weight: '1.4 kg',
         desc: 'ศูนย์กลางระบบประสาท ควบคุมความคิด ความจำ และการรับรู้ทั้งหมดของร่างกาย',
+        // annotations: position in 3D (meters), normal (surface direction)
         annotations: [
-            { x:38, y:28, title:'Cerebrum',    sub:'สมองใหญ่',    desc:'ควบคุมความคิด การเรียนรู้ ความจำ และการรับรู้ความรู้สึก' },
-            { x:28, y:40, title:'Frontal Lobe',sub:'กลีบหน้าผาก', desc:'การตัดสินใจ บุคลิกภาพ และการแก้ปัญหา' },
-            { x:55, y:55, title:'Cerebellum',  sub:'สมองน้อย',    desc:'ควบคุมการทรงตัวและการประสานงานกล้ามเนื้อ' },
-            { x:48, y:72, title:'Brain Stem',  sub:'ก้านสมอง',    desc:'ควบคุมการหายใจ อัตราการเต้นหัวใจ และการตื่นตัว' }
+            { pos: '0m 0.15m 0.05m', normal: '0m 1m 0m', title:'Cerebrum',    sub:'สมองใหญ่',    desc:'ควบคุมความคิด การเรียนรู้ ความจำ และการรับรู้ความรู้สึก' },
+            { pos: '-0.08m 0.08m 0.1m', normal: '-1m 0m 1m', title:'Frontal Lobe',sub:'กลีบหน้าผาก', desc:'การตัดสินใจ บุคลิกภาพ และการแก้ปัญหา' },
+            { pos: '0.1m -0.05m -0.08m', normal: '1m 0m -1m', title:'Cerebellum',  sub:'สมองน้อย',    desc:'ควบคุมการทรงตัวและการประสานงานกล้ามเนื้อ' },
+            { pos: '0m -0.12m 0m', normal: '0m -1m 0m', title:'Brain Stem',  sub:'ก้านสมอง',    desc:'ควบคุมการหายใจ อัตราการเต้นหัวใจ และการตื่นตัว' }
         ]
     },
     heart: {
@@ -547,11 +575,11 @@ const ORGANS = {
         nameEN: 'Heart', nameTH: 'หัวใจ', weight: '300 g',
         desc: 'ปั๊มเลือดไปเลี้ยงทุกเซลล์ในร่างกาย เต้นกว่า 100,000 ครั้งต่อวันโดยไม่หยุดพัก',
         annotations: [
-            { x:36, y:33, title:'Left Atrium',    sub:'ห้องบนซ้าย',  desc:'รับเลือดที่มีออกซิเจนจากปอด' },
-            { x:57, y:33, title:'Right Atrium',   sub:'ห้องบนขวา',  desc:'รับเลือดดำจากทั่วร่างกาย' },
-            { x:34, y:62, title:'Left Ventricle', sub:'ห้องล่างซ้าย',desc:'ส่งเลือดออกไปเลี้ยงร่างกาย กล้ามเนื้อหนาที่สุด' },
-            { x:58, y:62, title:'Right Ventricle',sub:'ห้องล่างขวา',desc:'ส่งเลือดไปฟอกที่ปอด' },
-            { x:46, y:17, title:'Aorta',          sub:'เส้นเลือดใหญ่',desc:'หลอดเลือดแดงหลักที่ส่งเลือดออกจากหัวใจ' }
+            { pos: '-0.06m 0.08m 0.05m', normal: '-1m 1m 1m', title:'Left Atrium',    sub:'ห้องบนซ้าย',  desc:'รับเลือดที่มีออกซิเจนจากปอด' },
+            { pos: '0.06m 0.08m 0.05m', normal: '1m 1m 1m', title:'Right Atrium',   sub:'ห้องบนขวา',  desc:'รับเลือดดำจากทั่วร่างกาย' },
+            { pos: '-0.07m -0.05m 0.03m', normal: '-1m -1m 1m', title:'Left Ventricle', sub:'ห้องล่างซ้าย',desc:'ส่งเลือดออกไปเลี้ยงร่างกาย กล้ามเนื้อหนาที่สุด' },
+            { pos: '0.07m -0.05m 0.03m', normal: '1m -1m 1m', title:'Right Ventricle',sub:'ห้องล่างขวา',desc:'ส่งเลือดไปฟอกที่ปอด' },
+            { pos: '0m 0.15m 0m', normal: '0m 1m 0m', title:'Aorta',          sub:'เส้นเลือดใหญ่',desc:'หลอดเลือดแดงหลักที่ส่งเลือดออกจากหัวใจ' }
         ]
     },
     lungs: {
@@ -559,11 +587,11 @@ const ORGANS = {
         nameEN: 'Lungs', nameTH: 'ปอด', weight: '1.0 kg',
         desc: 'แลกเปลี่ยนออกซิเจนและคาร์บอนไดออกไซด์ มีพื้นที่ผิวรวมกว่า 70 ตารางเมตร',
         annotations: [
-            { x:34, y:45, title:'Left Lung',  sub:'ปอดซ้าย', desc:'มี 2 กลีบ เว้าพื้นที่ให้หัวใจ' },
-            { x:60, y:45, title:'Right Lung', sub:'ปอดขวา', desc:'มี 3 กลีบ ใหญ่กว่าปอดซ้ายเล็กน้อย' },
-            { x:47, y:20, title:'Trachea',    sub:'หลอดลม', desc:'ทางเดินหลักนำอากาศเข้าสู่ปอด' },
-            { x:47, y:34, title:'Bronchi',    sub:'หลอดลมฝอย',desc:'แยกสองแขนงนำอากาศเข้าแต่ละปอด' },
-            { x:47, y:70, title:'Diaphragm',  sub:'กะบังลม', desc:'กล้ามเนื้อหลักขับเคลื่อนการหายใจ' }
+            { pos: '-0.08m 0m 0m', normal: '-1m 0m 0m', title:'Left Lung',  sub:'ปอดซ้าย', desc:'มี 2 กลีบ เว้าพื้นที่ให้หัวใจ' },
+            { pos: '0.08m 0m 0m', normal: '1m 0m 0m', title:'Right Lung', sub:'ปอดขวา', desc:'มี 3 กลีบ ใหญ่กว่าปอดซ้ายเล็กน้อย' },
+            { pos: '0m 0.13m 0.04m', normal: '0m 1m 1m', title:'Trachea',    sub:'หลอดลม', desc:'ทางเดินหลักนำอากาศเข้าสู่ปอด' },
+            { pos: '0m 0.06m 0.03m', normal: '0m 1m 1m', title:'Bronchi',    sub:'หลอดลมฝอย',desc:'แยกสองแขนงนำอากาศเข้าแต่ละปอด' },
+            { pos: '0m -0.14m 0m', normal: '0m -1m 0m', title:'Diaphragm',  sub:'กะบังลม', desc:'กล้ามเนื้อหลักขับเคลื่อนการหายใจ' }
         ]
     },
     liver: {
@@ -571,10 +599,10 @@ const ORGANS = {
         nameEN: 'Liver', nameTH: 'ตับ', weight: '1.5 kg',
         desc: 'โรงงานเคมีที่ใหญ่ที่สุดของร่างกาย ทำหน้าที่กว่า 500 อย่าง รวมถึงกำจัดสารพิษ',
         annotations: [
-            { x:38, y:38, title:'Right Lobe',   sub:'กลีบขวา',  desc:'กลีบใหญ่ที่สุด คิดเป็น 60% ของน้ำหนักตับ' },
-            { x:58, y:40, title:'Left Lobe',    sub:'กลีบซ้าย', desc:'กลีบเล็กกว่า ขยายเข้าช่องท้องด้านซ้าย' },
-            { x:42, y:67, title:'Gallbladder',  sub:'ถุงน้ำดี',  desc:'กักเก็บน้ำดีจากตับ ปล่อยออกเมื่อย่อยอาหาร' },
-            { x:50, y:52, title:'Portal Vein',  sub:'เส้นเลือดพอร์ทัล',desc:'นำเลือดจากระบบย่อยอาหารมากรองที่ตับ' }
+            { pos: '-0.07m 0.02m 0.03m', normal: '-1m 0m 1m', title:'Right Lobe',   sub:'กลีบขวา',  desc:'กลีบใหญ่ที่สุด คิดเป็น 60% ของน้ำหนักตับ' },
+            { pos: '0.08m 0.01m 0.02m', normal: '1m 0m 1m', title:'Left Lobe',    sub:'กลีบซ้าย', desc:'กลีบเล็กกว่า ขยายเข้าช่องท้องด้านซ้าย' },
+            { pos: '-0.04m -0.09m 0.05m', normal: '0m -1m 1m', title:'Gallbladder',  sub:'ถุงน้ำดี',  desc:'กักเก็บน้ำดีจากตับ ปล่อยออกเมื่อย่อยอาหาร' },
+            { pos: '0m -0.02m 0m', normal: '0m -1m 0m', title:'Portal Vein',  sub:'เส้นเลือดพอร์ทัล',desc:'นำเลือดจากระบบย่อยอาหารมากรองที่ตับ' }
         ]
     }
 };
@@ -605,27 +633,79 @@ const arControls  = $('ar-controls');
    STATE
 ═══════════════════════════════════════════════════════════ */
 let currentOrganId  = localStorage.getItem('selectedOrgan') || 'brain';
-let currentMode     = 'explore';   // 'explore' | 'ar'
+let currentMode     = 'explore';
 let annVisible      = true;
-let isFrozen        = false;       // freeze rotation in AR mode
+let isFrozen        = false;
 let cameraStream    = null;
 let currentTrack    = 'ambient';
 let selectedDotIdx  = -1;
+let gyroSupported   = false;
+let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
+let baseOrientation = { alpha: 0, beta: 0, gamma: 0 };
+
+// Annotation DOM cache
+let annotationDots = [];
 
 /* ═══════════════════════════════════════════════════════════
    BOOT
 ═══════════════════════════════════════════════════════════ */
 window.addEventListener('load', async () => {
-    // default: explore mode — dark gradient bg
+    // Check gyroscope support
+    if (window.DeviceOrientationEvent) {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // iOS 13+ requires permission
+            gyroSupported = 'pending';
+        } else {
+            gyroSupported = true;
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+    }
+
     arContainer.classList.add('explore-bg');
     cameraVideo.style.display = 'none';
 
     await loadOrgan(currentOrganId, false);
     markActiveOrgan(currentOrganId);
 
-    // hide loading after bar animation (~1.6s)
     setTimeout(() => loading.classList.add('out'), 1600);
 });
+
+/* ═══════════════════════════════════════════════════════════
+   GYROSCOPE HANDLING
+═══════════════════════════════════════════════════════════ */
+function handleOrientation(event) {
+    deviceOrientation.alpha = event.alpha || 0;
+    deviceOrientation.beta  = event.beta  || 0;
+    deviceOrientation.gamma = event.gamma || 0;
+}
+
+async function requestGyroPermission() {
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') {
+                gyroSupported = true;
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        } catch (err) {
+            console.warn('Gyroscope permission denied:', err);
+        }
+    }
+}
+
+function applyGyroRotation() {
+    if (!gyroSupported || isFrozen) return;
+    
+    // Calculate relative rotation from base
+    const deltaAlpha = deviceOrientation.alpha - baseOrientation.alpha;
+    const deltaBeta  = deviceOrientation.beta  - baseOrientation.beta;
+    
+    // Convert to camera orbit (simplified)
+    const theta = deltaAlpha;
+    const phi   = 78 + deltaBeta * 0.5; // Base angle + tilt
+    
+    viewer.cameraOrbit = `${theta}deg ${Math.max(10, Math.min(170, phi))}deg 105%`;
+}
 
 /* ═══════════════════════════════════════════════════════════
    ORGAN LOADER
@@ -636,11 +716,8 @@ async function loadOrgan(id, animate = true) {
     currentOrganId = id;
     localStorage.setItem('selectedOrgan', id);
 
-    // Clear old annotations + detail
     clearAnnotations();
     hideAnnDetail();
-
-    // Show loading overlay
     loading.classList.remove('out');
 
     viewer.addEventListener('load', () => {
@@ -653,7 +730,6 @@ async function loadOrgan(id, animate = true) {
     }, { once: true });
 
     viewer.src = data.modelPath;
-    viewer.resetCamera = false;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -675,58 +751,67 @@ $('card-handle').addEventListener('click', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════
-   ANNOTATION DOTS
+   ANNOTATION DOTS - 3D LOCKED (using model-viewer hotspots)
 ═══════════════════════════════════════════════════════════ */
 function renderAnnotations(anns) {
     clearAnnotations();
+    annotationDots = [];
+    
     anns.forEach((ann, idx) => {
+        // Create hotspot element (model-viewer's built-in feature)
+        const hotspot = document.createElement('button');
+        hotspot.slot = `hotspot-${idx}`;
+        hotspot.className = 'ann-hotspot';
+        hotspot.setAttribute('data-position', ann.pos);
+        hotspot.setAttribute('data-normal', ann.normal);
+        hotspot.setAttribute('data-idx', idx);
+        
+        // Create custom dot inside hotspot
         const dot = document.createElement('div');
-        dot.className = 'ann-dot';
-        dot.style.left = ann.x + 'vw';
-        dot.style.top  = ann.y + 'vh';
-        dot.setAttribute('data-idx', idx);
-
-        const core = document.createElement('div');
-        core.className = 'ann-dot-core';
-        dot.appendChild(core);
-
-        dot.addEventListener('click', (e) => {
+        dot.className = 'ann-dot-core';
+        hotspot.appendChild(dot);
+        
+        // Click handler
+        hotspot.addEventListener('click', (e) => {
             e.stopPropagation();
             selectAnnotation(idx, ann);
         });
-        annLayer.appendChild(dot);
+        
+        // Add to model-viewer (this makes it track the 3D model automatically!)
+        viewer.appendChild(hotspot);
+        annotationDots.push({ element: hotspot, data: ann });
     });
 }
 
 function clearAnnotations() {
-    annLayer.innerHTML = '';
+    // Remove all hotspots from model-viewer
+    viewer.querySelectorAll('.ann-hotspot').forEach(el => el.remove());
+    annotationDots = [];
     selectedDotIdx = -1;
 }
 
 function selectAnnotation(idx, ann) {
-    // deselect all dots
-    annLayer.querySelectorAll('.ann-dot').forEach(d => d.classList.remove('selected'));
-    // select clicked
-    const dot = annLayer.querySelector(`[data-idx="${idx}"]`);
-    if (dot) dot.classList.add('selected');
+    // Deselect all hotspots
+    viewer.querySelectorAll('.ann-hotspot').forEach(h => h.classList.remove('selected'));
+    
+    // Select clicked hotspot
+    const hotspot = viewer.querySelector(`.ann-hotspot[data-idx="${idx}"]`);
+    if (hotspot) hotspot.classList.add('selected');
     selectedDotIdx = idx;
 
-    // show detail in card
     $('ann-d-title').textContent = ann.title;
     $('ann-d-sub').textContent   = ann.sub;
     $('ann-d-desc').textContent  = ann.desc;
     $('ann-detail').classList.add('show');
-
     expandCard();
 }
 
 function hideAnnDetail() {
     $('ann-detail').classList.remove('show');
-    annLayer.querySelectorAll('.ann-dot').forEach(d => d.classList.remove('selected'));
+    viewer.querySelectorAll('.ann-hotspot').forEach(h => h.classList.remove('selected'));
     selectedDotIdx = -1;
 }
 
-// click on model canvas → deselect annotation
 viewer.addEventListener('click', () => {
     if (selectedDotIdx !== -1) hideAnnDetail();
 });
@@ -745,52 +830,64 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
 async function setMode(mode) {
     currentMode = mode;
 
-    // update badge UI
     document.querySelectorAll('.mode-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.mode === mode);
     });
 
     if (mode === 'ar') {
-        /* ── AR Mode ─────────────────────────────────────
-           - Real camera background
-           - touch-action: pan-y (default, camera controls ON)
-           - Model locked: rotation only, NO pan/translate
-           - AR controls sidebar appears
-        ─────────────────────────────────────────────── */
+        // Request gyro permission on iOS
+        if (gyroSupported === 'pending') {
+            await requestGyroPermission();
+        }
+        
+        // Store base orientation
+        baseOrientation = { ...deviceOrientation };
+        
         await startCamera();
         arContainer.classList.remove('explore-bg');
         cameraVideo.style.display = 'block';
-
-        // Lock model position — only rotation allowed
-        // model-viewer: disable pan (drag), keep rotation & zoom
+        
         viewer.setAttribute('touch-action', 'none');
-        viewer.setAttribute('interaction-policy', 'allow-when-focused');
-        // Orbit limits to prevent panning the model away
-        viewer.setAttribute('camera-orbit', viewer.cameraOrbit || '0deg 78deg 105%');
-        // Remove pan by intercepting pointer events — handled via CSS / model-viewer attributes
         viewer.setAttribute('disable-pan', '');
-
+        
         arControls.classList.add('visible');
         isFrozen = false;
         $('btn-freeze').classList.remove('frozen');
-
+        
+        // Start gyro rotation if supported
+        if (gyroSupported === true) {
+            startGyroLoop();
+        }
     } else {
-        /* ── Explore Mode ────────────────────────────────
-           - Dark gradient background
-           - Full camera controls (rotate, zoom, pan)
-        ─────────────────────────────────────────────── */
         stopCamera();
+        stopGyroLoop();
         cameraVideo.style.display = 'none';
         arContainer.classList.add('explore-bg');
-
+        
         viewer.removeAttribute('disable-pan');
         viewer.setAttribute('touch-action', 'pan-y');
-        viewer.removeAttribute('interaction-policy');
-
+        
         arControls.classList.remove('visible');
         isFrozen = false;
         viewer.autoRotate = false;
         $('tog-rotate').checked = false;
+    }
+}
+
+let gyroLoopId = null;
+function startGyroLoop() {
+    stopGyroLoop();
+    function loop() {
+        applyGyroRotation();
+        gyroLoopId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+function stopGyroLoop() {
+    if (gyroLoopId) {
+        cancelAnimationFrame(gyroLoopId);
+        gyroLoopId = null;
     }
 }
 
@@ -808,7 +905,6 @@ async function startCamera() {
         await cameraVideo.play();
     } catch(err) {
         console.warn('[Camera] Access denied or not available:', err);
-        // fallback — stay in gradient but show AR controls
         arContainer.classList.add('explore-bg');
     }
 }
@@ -823,16 +919,6 @@ function stopCamera() {
 /* ═══════════════════════════════════════════════════════════
    AR CONTROLS
 ═══════════════════════════════════════════════════════════ */
-// Zoom in / out via camera orbit radius
-function getOrbitParts() {
-    // cameraOrbit returns e.g. "0deg 75deg 105%"
-    const parts = (viewer.getCameraOrbit
-        ? [viewer.getCameraOrbit().theta + 'rad', viewer.getCameraOrbit().phi + 'rad', viewer.getCameraOrbit().radius + 'm']
-        : ['0deg','78deg','105%']
-    );
-    return parts;
-}
-
 $('btn-zoom-in').addEventListener('click', () => {
     const current = viewer.cameraOrbit;
     const parts = current ? current.split(' ') : ['0deg','78deg','105%'];
@@ -860,14 +946,27 @@ $('btn-zoom-out').addEventListener('click', () => {
 $('btn-freeze').addEventListener('click', () => {
     isFrozen = !isFrozen;
     $('btn-freeze').classList.toggle('frozen', isFrozen);
-    // disable all camera controls when frozen
-    viewer.cameraControls = !isFrozen;
-    if (!isFrozen) viewer.cameraControls = true;
+    
+    if (isFrozen) {
+        // Freeze: disable camera controls
+        viewer.cameraControls = false;
+        stopGyroLoop();
+    } else {
+        // Unfreeze: enable gyro or manual controls
+        viewer.cameraControls = true;
+        if (currentMode === 'ar' && gyroSupported === true) {
+            baseOrientation = { ...deviceOrientation };
+            startGyroLoop();
+        }
+    }
 });
 
 $('btn-reset-ar').addEventListener('click', () => {
     viewer.cameraOrbit = '0deg 78deg 105%';
     viewer.fieldOfView = 'auto';
+    if (currentMode === 'ar' && gyroSupported === true) {
+        baseOrientation = { ...deviceOrientation };
+    }
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -913,18 +1012,15 @@ $('close-settings').addEventListener('click', () => {
 });
 backdrop.addEventListener('click', closeSidebar);
 
-/* ─ Auto-rotate ─ */
 $('tog-rotate').addEventListener('change', function() {
     viewer.autoRotate = this.checked;
     viewer.autoRotateDelay = 600;
 });
 
-/* ─ Shadow ─ */
 $('tog-shadow').addEventListener('change', function() {
     viewer.shadowIntensity = this.checked ? 1 : 0;
 });
 
-/* ─ Annotations toggle ─ */
 $('tog-ann').addEventListener('change', function() {
     annVisible = this.checked;
     if (annVisible) {
@@ -935,7 +1031,6 @@ $('tog-ann').addEventListener('change', function() {
     }
 });
 
-/* ─ Music toggle ─ */
 $('tog-music').addEventListener('change', function() {
     if (this.checked) {
         if (!bgAudio.src || bgAudio.src === location.href) setTrack(currentTrack);
@@ -945,14 +1040,12 @@ $('tog-music').addEventListener('change', function() {
     }
 });
 
-/* ─ Volume slider ─ */
 $('vol-slider').addEventListener('input', function() {
     bgAudio.volume = this.value / 100;
     $('vol-label').textContent = this.value + '%';
 });
 bgAudio.volume = 0.5;
 
-/* ─ Music track selector ─ */
 document.querySelectorAll('.m-opt').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.m-opt').forEach(b => b.classList.remove('active'));
@@ -967,7 +1060,6 @@ function setTrack(id) {
     if (wasPlaying) bgAudio.play().catch(()=>{});
 }
 
-/* ─ Reset camera ─ */
 $('btn-reset-cam').addEventListener('click', () => {
     viewer.cameraOrbit = '0deg 78deg 105%';
     viewer.fieldOfView = 'auto';
@@ -985,7 +1077,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* ═══════════════════════════════════════════════════════════
-   RESIZE — re-render annotations
+   RESIZE
 ═══════════════════════════════════════════════════════════ */
 let resizeTimer;
 window.addEventListener('resize', () => {
