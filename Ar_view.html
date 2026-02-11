@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#080c14">
-    <title>AR Anatomy Viewer</title>
+    <title>AR Anatomy Viewer - Enhanced</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,7 +75,20 @@
             background:transparent; --poster-color:transparent;
         }
 
-        /* ─── Mode Badge (top-left corner) ───────────────────── */
+        /* ─── Heartbeat Animation for model-viewer ───────────── */
+        model-viewer.heartbeat {
+            animation: heartbeatPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes heartbeatPulse {
+            0%, 100% { transform: scale(1); }
+            10% { transform: scale(1.05); }
+            20% { transform: scale(1); }
+            30% { transform: scale(1.08); }
+            40%, 100% { transform: scale(1); }
+        }
+
+        /* ─── Mode Badge (top-center) ───────────────────────── */
         #mode-badge {
             position:fixed; top:20px; left:50%; transform:translateX(-50%);
             display:flex; align-items:center; gap:0;
@@ -193,6 +206,8 @@
             box-shadow:0 -10px 40px rgba(0,0,0,0.18);
             transition:transform 0.45s var(--ease-spring);
             will-change:transform;
+            max-height: 75vh;
+            overflow-y: auto;
         }
         #info-card.collapsed { transform:translateY(calc(100% - 72px)); }
 
@@ -224,9 +239,89 @@
             background:var(--accent-soft); padding:5px 11px; border-radius:20px;
             flex-shrink:0; margin-left:12px; margin-top:4px; letter-spacing:0.02em;
         }
+        
+        /* Sound control button */
+        .card-sound-btn {
+            position: absolute;
+            top: 18px;
+            right: 24px;
+            width: 38px;
+            height: 38px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s var(--ease-out);
+            cursor: pointer;
+            color: var(--ink-3);
+        }
+        .card-sound-btn:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .card-sound-btn.playing {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+            animation: soundPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes soundPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .card-sound-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        
         .card-divider { height:1px; background:var(--border); margin:14px 0; }
         .card-desc {
             font-size:0.875rem; color:var(--ink-2); line-height:1.7; font-weight:300;
+            margin-bottom: 12px;
+        }
+        
+        /* Fun facts section */
+        .card-facts {
+            background: var(--surface-2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 12px;
+        }
+        .card-facts-title {
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .card-facts-list {
+            list-style: none;
+        }
+        .card-facts-list li {
+            font-size: 0.82rem;
+            color: var(--ink-2);
+            line-height: 1.6;
+            padding-left: 18px;
+            position: relative;
+            margin-bottom: 6px;
+        }
+        .card-facts-list li:before {
+            content: '•';
+            position: absolute;
+            left: 6px;
+            color: var(--accent);
+            font-weight: bold;
         }
 
         /* Annotation detail block (shown on dot click) */
@@ -372,9 +467,6 @@
             opacity:0; visibility:hidden; transition:all 0.3s;
         }
         #backdrop.on { opacity:1; visibility:visible; }
-
-        /* ─── Scroll lock ─────────────────────────────────────── */
-        .no-scroll { overflow:hidden; }
     </style>
 </head>
 <body>
@@ -383,7 +475,7 @@
 <div id="loading">
     <div class="load-wordmark">AR <em>Anatomy</em></div>
     <div class="load-bar"></div>
-    <div class="load-hint">Initializing</div>
+    <div class="load-hint">กำลังโหลด...</div>
 </div>
 
 <!-- ── AR / Camera Layer ────────────────────────────────────── -->
@@ -406,14 +498,11 @@
     </model-viewer>
 </div>
 
-<!-- ── Annotation layer ──────────────────────────────────────── -->
-<div id="ann-layer"></div>
-
 <!-- ── Mode toggle ──────────────────────────────────────────── -->
 <div id="mode-badge">
-    <button class="mode-tab active" data-mode="explore">Explore</button>
+    <button class="mode-tab active" data-mode="explore">สำรวจ</button>
     <div class="mode-divider"></div>
-    <button class="mode-tab" data-mode="ar">AR Live</button>
+    <button class="mode-tab" data-mode="ar">AR สด</button>
 </div>
 
 <!-- ── Top corner buttons ───────────────────────────────────── -->
@@ -426,20 +515,16 @@
 
 <!-- ── AR Controls (only in AR mode) ────────────────────────── -->
 <div id="ar-controls">
-    <!-- Zoom in -->
-    <button class="ar-ctrl-btn" id="btn-zoom-in" title="Zoom In">
+    <button class="ar-ctrl-btn" id="btn-zoom-in" title="ซูมเข้า">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
     </button>
-    <!-- Zoom out -->
-    <button class="ar-ctrl-btn" id="btn-zoom-out" title="Zoom Out">
+    <button class="ar-ctrl-btn" id="btn-zoom-out" title="ซูมออก">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
     </button>
-    <!-- Freeze / unfreeze rotation -->
-    <button class="ar-ctrl-btn" id="btn-freeze" title="Freeze Rotation">
+    <button class="ar-ctrl-btn" id="btn-freeze" title="หยุดหมุน">
         <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><path d="M17 7l-5-5-5 5"/><path d="M17 17l-5 5-5-5"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M7 7l-5 5 5 5"/><path d="M17 7l5 5-5 5"/></svg>
     </button>
-    <!-- Reset camera -->
-    <button class="ar-ctrl-btn" id="btn-reset-ar" title="Reset View">
+    <button class="ar-ctrl-btn" id="btn-reset-ar" title="รีเซ็ต">
         <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
     </button>
 </div>
@@ -447,6 +532,14 @@
 <!-- ── Info Card ─────────────────────────────────────────────── -->
 <div id="info-card" class="collapsed">
     <div class="card-handle" id="card-handle"></div>
+    
+    <button class="card-sound-btn" id="btn-organ-sound" title="เล่นเสียงอวัยวะ">
+        <svg viewBox="0 0 24 24" class="sound-icon">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+    </button>
+    
     <div class="card-top">
         <div>
             <div class="card-organ-label" id="card-label">Anatomy</div>
@@ -457,6 +550,12 @@
     </div>
     <div class="card-divider"></div>
     <p class="card-desc" id="card-desc">—</p>
+    
+    <div class="card-facts" id="card-facts">
+        <div class="card-facts-title">ความรู้น่าสนใจ</div>
+        <ul class="card-facts-list" id="facts-list"></ul>
+    </div>
+    
     <div id="ann-detail">
         <div class="ann-detail-title" id="ann-d-title"></div>
         <div class="ann-detail-sub"   id="ann-d-sub"></div>
@@ -515,22 +614,32 @@
                 <label class="tog"><input type="checkbox" id="tog-shadow" checked><div class="tog-track"></div><div class="tog-thumb"></div></label>
             </div>
             <div class="s-row">
-                <span class="s-row-label">จุดอธิบายส่วนประกอบ</span>
+                <span class="s-row-label">จุดอธิบาย</span>
                 <label class="tog"><input type="checkbox" id="tog-ann" checked><div class="tog-track"></div><div class="tog-thumb"></div></label>
             </div>
         </div>
         <div class="s-section">
-            <div class="s-label">เสียง</div>
+            <div class="s-label">เสียงอวัยวะ</div>
+            <div class="s-slider-wrap" style="margin-bottom:14px">
+                <div class="s-slider-head">
+                    <span class="s-row-label">ระดับเสียงอวัยวะ</span>
+                    <span class="s-slider-val" id="organ-vol-label">70%</span>
+                </div>
+                <input type="range" class="s-range" id="organ-vol-slider" min="0" max="100" value="70">
+            </div>
+        </div>
+        <div class="s-section">
+            <div class="s-label">เพลงพื้นหลัง</div>
             <div class="s-row">
-                <span class="s-row-label">เพลงพื้นหลัง</span>
+                <span class="s-row-label">เปิดเพลง</span>
                 <label class="tog"><input type="checkbox" id="tog-music"><div class="tog-track"></div><div class="tog-thumb"></div></label>
             </div>
             <div class="s-slider-wrap" style="margin-bottom:14px">
                 <div class="s-slider-head">
                     <span class="s-row-label">ระดับเสียง</span>
-                    <span class="s-slider-val" id="vol-label">50%</span>
+                    <span class="s-slider-val" id="vol-label">30%</span>
                 </div>
-                <input type="range" class="s-range" id="vol-slider" min="0" max="100" value="50">
+                <input type="range" class="s-range" id="vol-slider" min="0" max="100" value="30">
             </div>
             <div class="music-opts">
                 <button class="m-opt active" data-track="ambient">Ambient</button>
@@ -548,69 +657,237 @@
 <!-- ── Backdrop ──────────────────────────────────────────────── -->
 <div id="backdrop"></div>
 
+<!-- 
+═══════════════════════════════════════════════════════════════
+  🔊 AUDIO ELEMENTS
+═══════════════════════════════════════════════════════════════
+  สองตัวนี้เป็น Audio elements สำหรับเล่นเสียง:
+  1. bg-audio = เพลงพื้นหลัง (Background Music)
+  2. organ-audio = เสียงอวัยวะ (Organ Sounds)
+-->
 <audio id="bg-audio" loop></audio>
+<audio id="organ-audio" loop></audio>
 
-<!-- ── Script ───────────────────────────────────────────────── -->
 <script>
 'use strict';
 
 /* ═══════════════════════════════════════════════════════════
-   ORGAN DATA — each organ isolated, easy to extend
-═══════════════════════════════════════════════════════════ */
+   🎵 MUSIC LIBRARY
+   ═══════════════════════════════════════════════════════════
+   ⚠️ ใส่ URL เพลงพื้นหลังของคุณตรงนี้!
+   มี 3 โหมด: ambient, focus, nature
+   ตอนนี้ใช้เพลงตัวอย่างจาก Pixabay (ฟรี, ไม่ต้องขออนุญาต)
+*/
+const MUSIC = {
+    ambient: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',  // 🎵 เปลี่ยน URL ตรงนี้สำหรับ Ambient
+    focus:   'Sound/focus.mp3',  // 🎵 เปลี่ยน URL ตรงนี้สำหรับ Focus
+    nature:  'Sound/nature.mp3'   // 🎵 เปลี่ยน URL ตรงนี้สำหรับ Nature
+};
+
+/* ═══════════════════════════════════════════════════════════
+   🫀 ORGAN DATA
+   ══════════════════════════════
+   คำอธิบายสั้นๆ กระชับ ได้ใจความ
+*/
 const ORGANS = {
     brain: {
         modelPath: 'brain/scene.gltf',
-        nameEN: 'Brain', nameTH: 'สมอง', weight: '1.4 kg',
-        desc: 'ศูนย์กลางระบบประสาท ควบคุมความคิด ความจำ และการรับรู้ทั้งหมดของร่างกาย',
-        // annotations: position in 3D (meters), normal (surface direction)
+        nameEN: 'Brain', 
+        nameTH: 'สมอง', 
+        weight: '1.4 กก.',
+        desc: 'ศูนย์บัญชาการของร่างกาย ควบคุมความคิด ความจำ อารมณ์ และการเคลื่อนไหว',
+        // 🔊 ใส่ URL เสียงสมองตรงนี้ (เช่น เสียงคลื่นสมอง หรือเสียง ambient แบบ sci-fi)
+        soundUrl: 'Sound/Brind.mp3', // ⚠️ ใส่ URL เสียงสมองของคุณตรงนี้
+        hasAnimation: false, // สมองไม่มีแอนิเมชัน
+        facts: [
+            'ใช้พลังงาน 20% ของทั้งร่างกาย',
+            'มีเซลล์ประสาท 86,000 ล้านเซลล์',
+            'ประมวลผลเร็วกว่าคอมพิวเตอร์',
+            'ไม่รู้สึกเจ็บปวดของตัวเอง'
+        ],
         annotations: [
-            { pos: '0m 0.15m 0.05m', normal: '0m 1m 0m', title:'Cerebrum',    sub:'สมองใหญ่',    desc:'ควบคุมความคิด การเรียนรู้ ความจำ และการรับรู้ความรู้สึก' },
-            { pos: '-0.08m 0.08m 0.1m', normal: '-1m 0m 1m', title:'Frontal Lobe',sub:'กลีบหน้าผาก', desc:'การตัดสินใจ บุคลิกภาพ และการแก้ปัญหา' },
-            { pos: '0.1m -0.05m -0.08m', normal: '1m 0m -1m', title:'Cerebellum',  sub:'สมองน้อย',    desc:'ควบคุมการทรงตัวและการประสานงานกล้ามเนื้อ' },
-            { pos: '0m -0.12m 0m', normal: '0m -1m 0m', title:'Brain Stem',  sub:'ก้านสมอง',    desc:'ควบคุมการหายใจ อัตราการเต้นหัวใจ และการตื่นตัว' }
+            { 
+                pos: '0m 0.15m 0.05m', 
+                normal: '0m 1m 0m', 
+                title:'Cerebrum',
+                sub:'สมองใหญ่',
+                desc:'ควบคุมความคิด ความจำ และการรับรู้' 
+            },
+            { 
+                pos: '-0.08m 0.08m 0.1m', 
+                normal: '-1m 0m 1m', 
+                title:'Frontal Lobe',
+                sub:'กลีบหน้าผาก', 
+                desc:'ตัดสินใจ วางแผน และแก้ปัญหา' 
+            },
+            { 
+                pos: '0.1m -0.05m -0.08m', 
+                normal: '1m 0m -1m', 
+                title:'Cerebellum',
+                sub:'สมองน้อย',
+                desc:'ทรงตัว ประสานงานกล้ามเนื้อ' 
+            },
+            { 
+                pos: '0m -0.12m 0m', 
+                normal: '0m -1m 0m', 
+                title:'Brain Stem',
+                sub:'ก้านสมอง',
+                desc:'ควบคุมการหายใจและหัวใจเต้น' 
+            }
         ]
     },
     heart: {
         modelPath: 'human_heart/scene.gltf',
-        nameEN: 'Heart', nameTH: 'หัวใจ', weight: '300 g',
-        desc: 'ปั๊มเลือดไปเลี้ยงทุกเซลล์ในร่างกาย เต้นกว่า 100,000 ครั้งต่อวันโดยไม่หยุดพัก',
+        nameEN: 'Heart', 
+        nameTH: 'หัวใจ', 
+        weight: '300 กรัม',
+        desc: 'ปั๊มเลือดไปเลี้ยงทั่วร่างกาย เต้น 100,000 ครั้งต่อวันโดยไม่หยุดพัก',
+        // 🔊 เสียงหัวใจเต้น (ใช้เสียงจริงจาก freesound.org)
+        soundUrl: 'Sound/Hard.mp3', // ✅ เสียงหัวใจเต้นจริง!
+        hasAnimation: true, // ✅ หัวใจมีแอนิเมชันเต้น
+        facts: [
+            'เต้น 3 พันล้านครั้งในชีวิต 70 ปี',
+            'สูบฉีดเลือดได้ไกล 9 เมตร',
+            'เริ่มเต้นตั้งแต่ในครรภ์ 4 สัปดาห์',
+            'กล้ามเนื้อแข็งแรงที่สุดในร่างกาย'
+        ],
         annotations: [
-            { pos: '-0.06m 0.08m 0.05m', normal: '-1m 1m 1m', title:'Left Atrium',    sub:'ห้องบนซ้าย',  desc:'รับเลือดที่มีออกซิเจนจากปอด' },
-            { pos: '0.06m 0.08m 0.05m', normal: '1m 1m 1m', title:'Right Atrium',   sub:'ห้องบนขวา',  desc:'รับเลือดดำจากทั่วร่างกาย' },
-            { pos: '-0.07m -0.05m 0.03m', normal: '-1m -1m 1m', title:'Left Ventricle', sub:'ห้องล่างซ้าย',desc:'ส่งเลือดออกไปเลี้ยงร่างกาย กล้ามเนื้อหนาที่สุด' },
-            { pos: '0.07m -0.05m 0.03m', normal: '1m -1m 1m', title:'Right Ventricle',sub:'ห้องล่างขวา',desc:'ส่งเลือดไปฟอกที่ปอด' },
-            { pos: '0m 0.15m 0m', normal: '0m 1m 0m', title:'Aorta',          sub:'เส้นเลือดใหญ่',desc:'หลอดเลือดแดงหลักที่ส่งเลือดออกจากหัวใจ' }
+            { 
+                pos: '-0.06m 0.08m 0.05m', 
+                normal: '-1m 1m 1m', 
+                title:'Left Atrium',
+                sub:'ห้องบนซ้าย',
+                desc:'รับเลือดสดจากปอด' 
+            },
+            { 
+                pos: '0.06m 0.08m 0.05m', 
+                normal: '1m 1m 1m', 
+                title:'Right Atrium',
+                sub:'ห้องบนขวา',
+                desc:'รับเลือดดำจากร่างกาย' 
+            },
+            { 
+                pos: '-0.07m -0.05m 0.03m', 
+                normal: '-1m -1m 1m', 
+                title:'Left Ventricle',
+                sub:'ห้องล่างซ้าย',
+                desc:'สูบฉีดเลือดไปทั่วร่างกาย' 
+            },
+            { 
+                pos: '0.07m -0.05m 0.03m', 
+                normal: '1m -1m 1m', 
+                title:'Right Ventricle',
+                sub:'ห้องล่างขวา',
+                desc:'ส่งเลือดไปฟอกที่ปอด' 
+            },
+            { 
+                pos: '0m 0.15m 0m', 
+                normal: '0m 1m 0m', 
+                title:'Aorta',
+                sub:'หลอดเลือดใหญ่',
+                desc:'ส่งเลือดออกจากหัวใจ' 
+            }
         ]
     },
     lungs: {
         modelPath: 'human_lungs/scene.gltf',
-        nameEN: 'Lungs', nameTH: 'ปอด', weight: '1.0 kg',
-        desc: 'แลกเปลี่ยนออกซิเจนและคาร์บอนไดออกไซด์ มีพื้นที่ผิวรวมกว่า 70 ตารางเมตร',
+        nameEN: 'Lungs', 
+        nameTH: 'ปอด', 
+        weight: '1.0 กก.',
+        desc: 'แลกเปลี่ยนอากาศ มีถุงลม 300 ล้านถุง พื้นที่รวม 70 ตารางเมตร',
+        // 🔊 ใส่ URL เสียงหายใจตรงนี้
+        soundUrl: 'Sound/human_lungs.mp3', // ⚠️ ใส่ URL เสียงหายใจของคุณตรงนี้
+        hasAnimation: false, // ปอดไม่มีแอนิเมชัน (หรือจะเพิ่มก็ได้)
+        facts: [
+            'หายใจ 20,000 ครั้งต่อวัน',
+            'ปอดขวาใหญ่กว่าปอดซ้าย',
+            'สามารถลอยน้ำได้',
+            'ไม่มีกล้ามเนื้อของตัวเอง'
+        ],
         annotations: [
-            { pos: '-0.08m 0m 0m', normal: '-1m 0m 0m', title:'Left Lung',  sub:'ปอดซ้าย', desc:'มี 2 กลีบ เว้าพื้นที่ให้หัวใจ' },
-            { pos: '0.08m 0m 0m', normal: '1m 0m 0m', title:'Right Lung', sub:'ปอดขวา', desc:'มี 3 กลีบ ใหญ่กว่าปอดซ้ายเล็กน้อย' },
-            { pos: '0m 0.13m 0.04m', normal: '0m 1m 1m', title:'Trachea',    sub:'หลอดลม', desc:'ทางเดินหลักนำอากาศเข้าสู่ปอด' },
-            { pos: '0m 0.06m 0.03m', normal: '0m 1m 1m', title:'Bronchi',    sub:'หลอดลมฝอย',desc:'แยกสองแขนงนำอากาศเข้าแต่ละปอด' },
-            { pos: '0m -0.14m 0m', normal: '0m -1m 0m', title:'Diaphragm',  sub:'กะบังลม', desc:'กล้ามเนื้อหลักขับเคลื่อนการหายใจ' }
+            { 
+                pos: '-0.08m 0m 0m', 
+                normal: '-1m 0m 0m', 
+                title:'Left Lung',
+                sub:'ปอดซ้าย', 
+                desc:'มี 2 กลีบ เล็กกว่าปอดขวา' 
+            },
+            { 
+                pos: '0.08m 0m 0m', 
+                normal: '1m 0m 0m', 
+                title:'Right Lung',
+                sub:'ปอดขวา', 
+                desc:'มี 3 กลีบ ใหญ่กว่าปอดซ้าย' 
+            },
+            { 
+                pos: '0m 0.13m 0.04m', 
+                normal: '0m 1m 1m', 
+                title:'Trachea',
+                sub:'หลอดลม', 
+                desc:'ท่อนำอากาศเข้าปอด' 
+            },
+            { 
+                pos: '0m 0.06m 0.03m', 
+                normal: '0m 1m 1m', 
+                title:'Bronchi',
+                sub:'หลอดลมฝอย',
+                desc:'แยกสองแขนงเข้าแต่ละปอด' 
+            },
+            { 
+                pos: '0m -0.14m 0m', 
+                normal: '0m -1m 0m', 
+                title:'Diaphragm',
+                sub:'กะบังลม', 
+                desc:'กล้ามเนื้อขับเคลื่อนการหายใจ' 
+            }
         ]
     },
     liver: {
         modelPath: 'human_liver_and_gallbladder/scene.gltf',
-        nameEN: 'Liver', nameTH: 'ตับ', weight: '1.5 kg',
-        desc: 'โรงงานเคมีที่ใหญ่ที่สุดของร่างกาย ทำหน้าที่กว่า 500 อย่าง รวมถึงกำจัดสารพิษ',
+        nameEN: 'Liver', 
+        nameTH: 'ตับ', 
+        weight: '1.5 กก.',
+        desc: 'โรงงานเคมีของร่างกาย ทำหน้าที่ 500+ อย่าง กำจัดสารพิษ สร้างโปรตีน',
+        // 🔊 ใส่ URL เสียงตับตรงนี้ (อาจเป็นเสียงน้ำไหล หรือเสียง ambient)
+        soundUrl: 'Sound/liver.mp3', // ⚠️ ใส่ URL เสียงตับของคุณตรงนี้
+        hasAnimation: false, // ตับไม่มีแอนิเมชัน
+        facts: [
+            'อวัยวะภายในที่ใหญ่และหนักที่สุด',
+            'สร้างตัวใหม่ได้ถึงแม้เหลือ 25%',
+            'กรองเลือด 1.4 ลิตรต่อนาที',
+            'ผลิตน้ำดีวันละ 800-1000 มล.'
+        ],
         annotations: [
-            { pos: '-0.07m 0.02m 0.03m', normal: '-1m 0m 1m', title:'Right Lobe',   sub:'กลีบขวา',  desc:'กลีบใหญ่ที่สุด คิดเป็น 60% ของน้ำหนักตับ' },
-            { pos: '0.08m 0.01m 0.02m', normal: '1m 0m 1m', title:'Left Lobe',    sub:'กลีบซ้าย', desc:'กลีบเล็กกว่า ขยายเข้าช่องท้องด้านซ้าย' },
-            { pos: '-0.04m -0.09m 0.05m', normal: '0m -1m 1m', title:'Gallbladder',  sub:'ถุงน้ำดี',  desc:'กักเก็บน้ำดีจากตับ ปล่อยออกเมื่อย่อยอาหาร' },
-            { pos: '0m -0.02m 0m', normal: '0m -1m 0m', title:'Portal Vein',  sub:'เส้นเลือดพอร์ทัล',desc:'นำเลือดจากระบบย่อยอาหารมากรองที่ตับ' }
+            { 
+                pos: '-0.07m 0.02m 0.03m', 
+                normal: '-1m 0m 1m', 
+                title:'Right Lobe',
+                sub:'กลีบขวา',
+                desc:'กลีบใหญ่ที่สุด 60% ของตับ' 
+            },
+            { 
+                pos: '0.08m 0.01m 0.02m', 
+                normal: '1m 0m 1m', 
+                title:'Left Lobe',
+                sub:'กลีบซ้าย', 
+                desc:'กลีบเล็กกว่า ขยายไปด้านซ้าย' 
+            },
+            { 
+                pos: '-0.04m -0.09m 0.05m', 
+                normal: '0m -1m 1m', 
+                title:'Gallbladder',
+                sub:'ถุงน้ำดี',
+                desc:'เก็บน้ำดีช่วยย่อยไขมัน' 
+            },
+            { 
+                pos: '0m -0.02m 0m', 
+                normal: '0m -1m 0m', 
+                title:'Portal Vein',
+                sub:'หลอดเลือดพอร์ทัล',
+                desc:'นำเลือดจากลำไส้มากรอง' 
+            }
         ]
     }
-};
-
-const MUSIC = {
-    ambient: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
-    focus:   'https://cdn.pixabay.com/download/audio/2022/03/10/audio_2c2d0e0c9f.mp3',
-    nature:  'https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8b5d3f8b3.mp3'
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -619,12 +896,12 @@ const MUSIC = {
 const $  = id => document.getElementById(id);
 const viewer      = $('viewer');
 const loading     = $('loading');
-const annLayer    = $('ann-layer');
 const infoCard    = $('info-card');
 const backdrop    = $('backdrop');
 const sidebar     = $('sidebar');
 const settingsPnl = $('settings-panel');
-const bgAudio     = $('bg-audio');
+const bgAudio     = $('bg-audio');       // 🎵 Background Music
+const organAudio  = $('organ-audio');    // 🔊 Organ Sounds
 const cameraVideo = $('camera-video');
 const arContainer = $('ar-container');
 const arControls  = $('ar-controls');
@@ -642,6 +919,7 @@ let selectedDotIdx  = -1;
 let gyroSupported   = false;
 let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
 let baseOrientation = { alpha: 0, beta: 0, gamma: 0 };
+let organSoundPlaying = false;
 
 // Annotation DOM cache
 let annotationDots = [];
@@ -653,7 +931,6 @@ window.addEventListener('load', async () => {
     // Check gyroscope support
     if (window.DeviceOrientationEvent) {
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            // iOS 13+ requires permission
             gyroSupported = 'pending';
         } else {
             gyroSupported = true;
@@ -666,6 +943,10 @@ window.addEventListener('load', async () => {
 
     await loadOrgan(currentOrganId, false);
     markActiveOrgan(currentOrganId);
+
+    // 🔊 ตั้งค่าระดับเสียงเริ่มต้น
+    organAudio.volume = 0.7;  // เสียงอวัยวะ 70%
+    bgAudio.volume = 0.3;     // เพลงพื้นหลัง 30%
 
     setTimeout(() => loading.classList.add('out'), 1600);
 });
@@ -696,19 +977,17 @@ async function requestGyroPermission() {
 function applyGyroRotation() {
     if (!gyroSupported || isFrozen) return;
     
-    // Calculate relative rotation from base
     const deltaAlpha = deviceOrientation.alpha - baseOrientation.alpha;
     const deltaBeta  = deviceOrientation.beta  - baseOrientation.beta;
     
-    // Convert to camera orbit (simplified)
     const theta = deltaAlpha;
-    const phi   = 78 + deltaBeta * 0.5; // Base angle + tilt
+    const phi   = 78 + deltaBeta * 0.5;
     
     viewer.cameraOrbit = `${theta}deg ${Math.max(10, Math.min(170, phi))}deg 105%`;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ORGAN LOADER
+   🫀 ORGAN LOADER
 ═══════════════════════════════════════════════════════════ */
 async function loadOrgan(id, animate = true) {
     const data = ORGANS[id];
@@ -719,6 +998,12 @@ async function loadOrgan(id, animate = true) {
     clearAnnotations();
     hideAnnDetail();
     loading.classList.remove('out');
+
+    // หยุดเสียงอวัยวะเดิม
+    stopOrganSound();
+    
+    //  เอาแอนิเมชันเต้นออกจาก viewer ก่อน
+    viewer.classList.remove('heartbeat');
 
     viewer.addEventListener('load', () => {
         setTimeout(() => {
@@ -741,6 +1026,15 @@ function updateCard(data) {
     $('card-name-th').textContent = data.nameTH;
     $('card-weight').textContent  = data.weight;
     $('card-desc').textContent    = data.desc;
+    
+    // อัพเดทความรู้น่าสนใจ
+    const factsList = $('facts-list');
+    factsList.innerHTML = '';
+    data.facts.forEach(fact => {
+        const li = document.createElement('li');
+        li.textContent = fact;
+        factsList.appendChild(li);
+    });
 }
 
 function expandCard()   { infoCard.classList.remove('collapsed'); }
@@ -751,14 +1045,59 @@ $('card-handle').addEventListener('click', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════
-   ANNOTATION DOTS - 3D LOCKED (using model-viewer hotspots)
+   🔊 ORGAN SOUND CONTROL
+   ═══════════════════════════════════════════════════════════
+   ปุ่มเปิด/ปิดเสียงอวัยวะที่บัตรข้อมูล
+*/
+$('btn-organ-sound').addEventListener('click', () => {
+    if (organSoundPlaying) {
+        stopOrganSound();
+    } else {
+        playOrganSound();
+    }
+});
+
+// ✅ เล่นเสียงอวัยวะ + เริ่มแอนิเมชัน (ถ้ามี)
+function playOrganSound() {
+    const data = ORGANS[currentOrganId];
+    if (!data || !data.soundUrl) {
+        console.warn('ไม่มีเสียงสำหรับอวัยวะนี้');
+        return;
+    }
+    
+    organAudio.src = data.soundUrl;
+    organAudio.play().then(() => {
+        organSoundPlaying = true;
+        $('btn-organ-sound').classList.add('playing');
+        
+        // ✅ ถ้าเป็นหัวใจ ให้เต้นตามจังหวะ!
+        if (data.hasAnimation && currentOrganId === 'heart') {
+            viewer.classList.add('heartbeat');
+        }
+    }).catch(err => {
+        console.warn('ไม่สามารถเล่นเสียงได้:', err);
+    });
+}
+
+// ✅ หยุดเสียงอวัยวะ + หยุดแอนิเมชัน
+function stopOrganSound() {
+    organAudio.pause();
+    organAudio.currentTime = 0;
+    organSoundPlaying = false;
+    $('btn-organ-sound').classList.remove('playing');
+    
+    // ✅ หยุดแอนิเมชันเต้น
+    viewer.classList.remove('heartbeat');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOTATION DOTS - 3D LOCKED
 ═══════════════════════════════════════════════════════════ */
 function renderAnnotations(anns) {
     clearAnnotations();
     annotationDots = [];
     
     anns.forEach((ann, idx) => {
-        // Create hotspot element (model-viewer's built-in feature)
         const hotspot = document.createElement('button');
         hotspot.slot = `hotspot-${idx}`;
         hotspot.className = 'ann-hotspot';
@@ -766,35 +1105,29 @@ function renderAnnotations(anns) {
         hotspot.setAttribute('data-normal', ann.normal);
         hotspot.setAttribute('data-idx', idx);
         
-        // Create custom dot inside hotspot
         const dot = document.createElement('div');
         dot.className = 'ann-dot-core';
         hotspot.appendChild(dot);
         
-        // Click handler
         hotspot.addEventListener('click', (e) => {
             e.stopPropagation();
             selectAnnotation(idx, ann);
         });
         
-        // Add to model-viewer (this makes it track the 3D model automatically!)
         viewer.appendChild(hotspot);
         annotationDots.push({ element: hotspot, data: ann });
     });
 }
 
 function clearAnnotations() {
-    // Remove all hotspots from model-viewer
     viewer.querySelectorAll('.ann-hotspot').forEach(el => el.remove());
     annotationDots = [];
     selectedDotIdx = -1;
 }
 
 function selectAnnotation(idx, ann) {
-    // Deselect all hotspots
     viewer.querySelectorAll('.ann-hotspot').forEach(h => h.classList.remove('selected'));
     
-    // Select clicked hotspot
     const hotspot = viewer.querySelector(`.ann-hotspot[data-idx="${idx}"]`);
     if (hotspot) hotspot.classList.add('selected');
     selectedDotIdx = idx;
@@ -835,12 +1168,10 @@ async function setMode(mode) {
     });
 
     if (mode === 'ar') {
-        // Request gyro permission on iOS
         if (gyroSupported === 'pending') {
             await requestGyroPermission();
         }
         
-        // Store base orientation
         baseOrientation = { ...deviceOrientation };
         
         await startCamera();
@@ -854,7 +1185,6 @@ async function setMode(mode) {
         isFrozen = false;
         $('btn-freeze').classList.remove('frozen');
         
-        // Start gyro rotation if supported
         if (gyroSupported === true) {
             startGyroLoop();
         }
@@ -948,11 +1278,9 @@ $('btn-freeze').addEventListener('click', () => {
     $('btn-freeze').classList.toggle('frozen', isFrozen);
     
     if (isFrozen) {
-        // Freeze: disable camera controls
         viewer.cameraControls = false;
         stopGyroLoop();
     } else {
-        // Unfreeze: enable gyro or manual controls
         viewer.cameraControls = true;
         if (currentMode === 'ar' && gyroSupported === true) {
             baseOrientation = { ...deviceOrientation };
@@ -1031,21 +1359,37 @@ $('tog-ann').addEventListener('change', function() {
     }
 });
 
+/* ═══════════════════════════════════════════════════════════
+   🎵 BACKGROUND MUSIC CONTROLS
+   ═══════════════════════════════════════════════════════════
+*/
 $('tog-music').addEventListener('change', function() {
     if (this.checked) {
-        if (!bgAudio.src || bgAudio.src === location.href) setTrack(currentTrack);
-        bgAudio.play().catch(()=>{});
+        // ถ้ายังไม่มี src ให้โหลดเพลง ambient ก่อน
+        if (!bgAudio.src || bgAudio.src === location.href) {
+            setTrack(currentTrack);
+        }
+        bgAudio.play().catch(err => {
+            console.warn('ไม่สามารถเล่นเพลงได้:', err);
+        });
     } else {
         bgAudio.pause();
     }
 });
 
+// ปรับระดับเสียงเพลงพื้นหลัง
 $('vol-slider').addEventListener('input', function() {
     bgAudio.volume = this.value / 100;
     $('vol-label').textContent = this.value + '%';
 });
-bgAudio.volume = 0.5;
 
+// ปรับระดับเสียงอวัยวะ
+$('organ-vol-slider').addEventListener('input', function() {
+    organAudio.volume = this.value / 100;
+    $('organ-vol-label').textContent = this.value + '%';
+});
+
+// เปลี่ยนเพลงพื้นหลัง
 document.querySelectorAll('.m-opt').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.m-opt').forEach(b => b.classList.remove('active'));
@@ -1053,11 +1397,17 @@ document.querySelectorAll('.m-opt').forEach(btn => {
         setTrack(btn.dataset.track);
     });
 });
+
+// ⚠️ ฟังก์ชันโหลดเพลงตามโหมดที่เลือก
 function setTrack(id) {
     currentTrack = id;
     const wasPlaying = !bgAudio.paused;
-    bgAudio.src = MUSIC[id];
-    if (wasPlaying) bgAudio.play().catch(()=>{});
+    bgAudio.src = MUSIC[id]; // 🎵 ดึง URL จาก MUSIC object
+    if (wasPlaying) {
+        bgAudio.play().catch(err => {
+            console.warn('ไม่สามารถเล่นเพลงได้:', err);
+        });
+    }
 }
 
 $('btn-reset-cam').addEventListener('click', () => {
