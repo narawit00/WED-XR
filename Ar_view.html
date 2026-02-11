@@ -75,17 +75,9 @@
             background:transparent; --poster-color:transparent;
         }
 
-        /* ─── Heartbeat Animation for model-viewer ───────────── */
-        model-viewer.heartbeat {
-            animation: heartbeatPulse 1s ease-in-out infinite;
-        }
-
-        @keyframes heartbeatPulse {
-            0%, 100% { transform: scale(1); }
-            10% { transform: scale(1.05); }
-            20% { transform: scale(1); }
-            30% { transform: scale(1.08); }
-            40%, 100% { transform: scale(1); }
+        /* ─── Audio-Reactive Animation ───────────────────────── */
+        model-viewer.audio-reactive {
+            transition: transform 0.05s ease-out;
         }
 
         /* ─── Mode Badge (top-center) ───────────────────────── */
@@ -288,40 +280,6 @@
         .card-desc {
             font-size:0.875rem; color:var(--ink-2); line-height:1.7; font-weight:300;
             margin-bottom: 12px;
-        }
-        
-        /* Fun facts section */
-        .card-facts {
-            background: var(--surface-2);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-top: 12px;
-        }
-        .card-facts-title {
-            font-size: 0.75rem;
-            font-weight: 500;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent);
-            margin-bottom: 8px;
-        }
-        .card-facts-list {
-            list-style: none;
-        }
-        .card-facts-list li {
-            font-size: 0.82rem;
-            color: var(--ink-2);
-            line-height: 1.6;
-            padding-left: 18px;
-            position: relative;
-            margin-bottom: 6px;
-        }
-        .card-facts-list li:before {
-            content: '•';
-            position: absolute;
-            left: 6px;
-            color: var(--accent);
-            font-weight: bold;
         }
 
         /* Annotation detail block (shown on dot click) */
@@ -551,11 +509,6 @@
     <div class="card-divider"></div>
     <p class="card-desc" id="card-desc">—</p>
     
-    <div class="card-facts" id="card-facts">
-        <div class="card-facts-title">ความรู้น่าสนใจ</div>
-        <ul class="card-facts-list" id="facts-list"></ul>
-    </div>
-    
     <div id="ann-detail">
         <div class="ann-detail-title" id="ann-d-title"></div>
         <div class="ann-detail-sub"   id="ann-d-sub"></div>
@@ -657,14 +610,7 @@
 <!-- ── Backdrop ──────────────────────────────────────────────── -->
 <div id="backdrop"></div>
 
-<!-- 
-═══════════════════════════════════════════════════════════════
-  🔊 AUDIO ELEMENTS
-═══════════════════════════════════════════════════════════════
-  สองตัวนี้เป็น Audio elements สำหรับเล่นเสียง:
-  1. bg-audio = เพลงพื้นหลัง (Background Music)
-  2. organ-audio = เสียงอวัยวะ (Organ Sounds)
--->
+<!-- 🔊 AUDIO ELEMENTS -->
 <audio id="bg-audio" loop></audio>
 <audio id="organ-audio" loop></audio>
 
@@ -673,22 +619,16 @@
 
 /* ═══════════════════════════════════════════════════════════
    🎵 MUSIC LIBRARY
-   ═══════════════════════════════════════════════════════════
-   ⚠️ ใส่ URL เพลงพื้นหลังของคุณตรงนี้!
-   มี 3 โหมด: ambient, focus, nature
-   ตอนนี้ใช้เพลงตัวอย่างจาก Pixabay (ฟรี, ไม่ต้องขออนุญาต)
-*/
+═══════════════════════════════════════════════════════════ */
 const MUSIC = {
-    ambient: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',  // 🎵 เปลี่ยน URL ตรงนี้สำหรับ Ambient
-    focus:   'Sound/focus.mp3',  // 🎵 เปลี่ยน URL ตรงนี้สำหรับ Focus
-    nature:  'Sound/nature.mp3'   // 🎵 เปลี่ยน URL ตรงนี้สำหรับ Nature
+    ambient: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3',
+    focus:   'Sound/focus.mp3',
+    nature:  'Sound/nature.mp3'
 };
 
 /* ═══════════════════════════════════════════════════════════
-   🫀 ORGAN DATA
-   ══════════════════════════════
-   คำอธิบายสั้นๆ กระชับ ได้ใจความ
-*/
+   🫀 ORGAN DATA (ลดข้อมูล facts ลงเหลือ 2-3 ข้อ)
+═══════════════════════════════════════════════════════════ */
 const ORGANS = {
     brain: {
         modelPath: 'brain/scene.gltf',
@@ -696,15 +636,8 @@ const ORGANS = {
         nameTH: 'สมอง', 
         weight: '1.4 กก.',
         desc: 'ศูนย์บัญชาการของร่างกาย ควบคุมความคิด ความจำ อารมณ์ และการเคลื่อนไหว',
-        // 🔊 ใส่ URL เสียงสมองตรงนี้ (เช่น เสียงคลื่นสมอง หรือเสียง ambient แบบ sci-fi)
-        soundUrl: 'Sound/Brind.mp3', // ⚠️ ใส่ URL เสียงสมองของคุณตรงนี้
-        hasAnimation: false, // สมองไม่มีแอนิเมชัน
-        facts: [
-            'ใช้พลังงาน 20% ของทั้งร่างกาย',
-            'มีเซลล์ประสาท 86,000 ล้านเซลล์',
-            'ประมวลผลเร็วกว่าคอมพิวเตอร์',
-            'ไม่รู้สึกเจ็บปวดของตัวเอง'
-        ],
+        soundUrl: 'Sound/Brind.mp3',
+        hasAnimation: true, // ✅ เปิดแอนิเมชัน
         annotations: [
             { 
                 pos: '0m 0.15m 0.05m', 
@@ -742,15 +675,8 @@ const ORGANS = {
         nameTH: 'หัวใจ', 
         weight: '300 กรัม',
         desc: 'ปั๊มเลือดไปเลี้ยงทั่วร่างกาย เต้น 100,000 ครั้งต่อวันโดยไม่หยุดพัก',
-        // 🔊 เสียงหัวใจเต้น (ใช้เสียงจริงจาก freesound.org)
-        soundUrl: 'Sound/Hard.mp3', // ✅ เสียงหัวใจเต้นจริง!
-        hasAnimation: true, // ✅ หัวใจมีแอนิเมชันเต้น
-        facts: [
-            'เต้น 3 พันล้านครั้งในชีวิต 70 ปี',
-            'สูบฉีดเลือดได้ไกล 9 เมตร',
-            'เริ่มเต้นตั้งแต่ในครรภ์ 4 สัปดาห์',
-            'กล้ามเนื้อแข็งแรงที่สุดในร่างกาย'
-        ],
+        soundUrl: 'Sound/Hard.mp3',
+        hasAnimation: true, // ✅ เปิดแอนิเมชัน
         annotations: [
             { 
                 pos: '-0.06m 0.08m 0.05m', 
@@ -795,15 +721,8 @@ const ORGANS = {
         nameTH: 'ปอด', 
         weight: '1.0 กก.',
         desc: 'แลกเปลี่ยนอากาศ มีถุงลม 300 ล้านถุง พื้นที่รวม 70 ตารางเมตร',
-        // 🔊 ใส่ URL เสียงหายใจตรงนี้
-        soundUrl: 'Sound/human_lungs.mp3', // ⚠️ ใส่ URL เสียงหายใจของคุณตรงนี้
-        hasAnimation: false, // ปอดไม่มีแอนิเมชัน (หรือจะเพิ่มก็ได้)
-        facts: [
-            'หายใจ 20,000 ครั้งต่อวัน',
-            'ปอดขวาใหญ่กว่าปอดซ้าย',
-            'สามารถลอยน้ำได้',
-            'ไม่มีกล้ามเนื้อของตัวเอง'
-        ],
+        soundUrl: 'Sound/human_lungs.mp3',
+        hasAnimation: true, // ✅ เปิดแอนิเมชัน
         annotations: [
             { 
                 pos: '-0.08m 0m 0m', 
@@ -848,15 +767,8 @@ const ORGANS = {
         nameTH: 'ตับ', 
         weight: '1.5 กก.',
         desc: 'โรงงานเคมีของร่างกาย ทำหน้าที่ 500+ อย่าง กำจัดสารพิษ สร้างโปรตีน',
-        // 🔊 ใส่ URL เสียงตับตรงนี้ (อาจเป็นเสียงน้ำไหล หรือเสียง ambient)
-        soundUrl: 'Sound/liver.mp3', // ⚠️ ใส่ URL เสียงตับของคุณตรงนี้
-        hasAnimation: false, // ตับไม่มีแอนิเมชัน
-        facts: [
-            'อวัยวะภายในที่ใหญ่และหนักที่สุด',
-            'สร้างตัวใหม่ได้ถึงแม้เหลือ 25%',
-            'กรองเลือด 1.4 ลิตรต่อนาที',
-            'ผลิตน้ำดีวันละ 800-1000 มล.'
-        ],
+        soundUrl: 'Sound/liver.mp3',
+        hasAnimation: true, // ✅ เปิดแอนิเมชัน
         annotations: [
             { 
                 pos: '-0.07m 0.02m 0.03m', 
@@ -900,8 +812,8 @@ const infoCard    = $('info-card');
 const backdrop    = $('backdrop');
 const sidebar     = $('sidebar');
 const settingsPnl = $('settings-panel');
-const bgAudio     = $('bg-audio');       // 🎵 Background Music
-const organAudio  = $('organ-audio');    // 🔊 Organ Sounds
+const bgAudio     = $('bg-audio');
+const organAudio  = $('organ-audio');
 const cameraVideo = $('camera-video');
 const arContainer = $('ar-container');
 const arControls  = $('ar-controls');
@@ -921,8 +833,11 @@ let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
 let baseOrientation = { alpha: 0, beta: 0, gamma: 0 };
 let organSoundPlaying = false;
 
-// Annotation DOM cache
-let annotationDots = [];
+// 🎨 Audio-Reactive Animation
+let audioContext = null;
+let analyser = null;
+let dataArray = null;
+let animationFrameId = null;
 
 /* ═══════════════════════════════════════════════════════════
    BOOT
@@ -944,9 +859,8 @@ window.addEventListener('load', async () => {
     await loadOrgan(currentOrganId, false);
     markActiveOrgan(currentOrganId);
 
-    // 🔊 ตั้งค่าระดับเสียงเริ่มต้น
-    organAudio.volume = 0.7;  // เสียงอวัยวะ 70%
-    bgAudio.volume = 0.3;     // เพลงพื้นหลัง 30%
+    organAudio.volume = 0.7;
+    bgAudio.volume = 0.3;
 
     setTimeout(() => loading.classList.add('out'), 1600);
 });
@@ -999,11 +913,8 @@ async function loadOrgan(id, animate = true) {
     hideAnnDetail();
     loading.classList.remove('out');
 
-    // หยุดเสียงอวัยวะเดิม
     stopOrganSound();
-    
-    //  เอาแอนิเมชันเต้นออกจาก viewer ก่อน
-    viewer.classList.remove('heartbeat');
+    viewer.classList.remove('audio-reactive');
 
     viewer.addEventListener('load', () => {
         setTimeout(() => {
@@ -1026,15 +937,6 @@ function updateCard(data) {
     $('card-name-th').textContent = data.nameTH;
     $('card-weight').textContent  = data.weight;
     $('card-desc').textContent    = data.desc;
-    
-    // อัพเดทความรู้น่าสนใจ
-    const factsList = $('facts-list');
-    factsList.innerHTML = '';
-    data.facts.forEach(fact => {
-        const li = document.createElement('li');
-        li.textContent = fact;
-        factsList.appendChild(li);
-    });
 }
 
 function expandCard()   { infoCard.classList.remove('collapsed'); }
@@ -1045,10 +947,8 @@ $('card-handle').addEventListener('click', () => {
 });
 
 /* ═══════════════════════════════════════════════════════════
-   🔊 ORGAN SOUND CONTROL
-   ═══════════════════════════════════════════════════════════
-   ปุ่มเปิด/ปิดเสียงอวัยวะที่บัตรข้อมูล
-*/
+   🔊 ORGAN SOUND CONTROL + AUDIO-REACTIVE ANIMATION
+═══════════════════════════════════════════════════════════ */
 $('btn-organ-sound').addEventListener('click', () => {
     if (organSoundPlaying) {
         stopOrganSound();
@@ -1057,7 +957,6 @@ $('btn-organ-sound').addEventListener('click', () => {
     }
 });
 
-// ✅ เล่นเสียงอวัยวะ + เริ่มแอนิเมชัน (ถ้ามี)
 function playOrganSound() {
     const data = ORGANS[currentOrganId];
     if (!data || !data.soundUrl) {
@@ -1065,37 +964,82 @@ function playOrganSound() {
         return;
     }
     
+    // ✅ เริ่ม Web Audio API
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaElementSource(organAudio);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        source.connect(analyser);
+        analyser.connect(audioContext.destination);
+    }
+    
     organAudio.src = data.soundUrl;
     organAudio.play().then(() => {
         organSoundPlaying = true;
         $('btn-organ-sound').classList.add('playing');
         
-        // ✅ ถ้าเป็นหัวใจ ให้เต้นตามจังหวะ!
-        if (data.hasAnimation && currentOrganId === 'heart') {
-            viewer.classList.add('heartbeat');
+        // ✅ เริ่มแอนิเมชันตามเสียง (ถ้ามี)
+        if (data.hasAnimation) {
+            viewer.classList.add('audio-reactive');
+            startAudioReactiveAnimation();
         }
     }).catch(err => {
         console.warn('ไม่สามารถเล่นเสียงได้:', err);
     });
 }
 
-// ✅ หยุดเสียงอวัยวะ + หยุดแอนิเมชัน
 function stopOrganSound() {
     organAudio.pause();
     organAudio.currentTime = 0;
     organSoundPlaying = false;
     $('btn-organ-sound').classList.remove('playing');
-    
-    // ✅ หยุดแอนิเมชันเต้น
-    viewer.classList.remove('heartbeat');
+    viewer.classList.remove('audio-reactive');
+    stopAudioReactiveAnimation();
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ANNOTATION DOTS - 3D LOCKED
+   🎨 AUDIO-REACTIVE ANIMATION
+   วิเคราะห์ frequency จากเสียง แล้วขยายโมเดลตามจังหวะ
+═══════════════════════════════════════════════════════════ */
+function startAudioReactiveAnimation() {
+    if (!analyser || !dataArray) return;
+    
+    function animate() {
+        if (!organSoundPlaying) return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        // คำนวณค่าเฉลี่ย frequency (0-255)
+        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+        
+        // แปลงเป็น scale (1.0 = ปกติ, 1.0-1.15 = ขยาย)
+        const scale = 1.0 + (average / 255) * 0.15;
+        
+        // ✅ ใช้ transform scale แทน CSS animation
+        viewer.style.transform = `scale(${scale})`;
+        
+        animationFrameId = requestAnimationFrame(animate);
+    }
+    
+    animate();
+}
+
+function stopAudioReactiveAnimation() {
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    viewer.style.transform = 'scale(1)'; // รีเซ็ต
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANNOTATION DOTS - 3D LOCKED (ใช้ hotspot ของ model-viewer)
 ═══════════════════════════════════════════════════════════ */
 function renderAnnotations(anns) {
     clearAnnotations();
-    annotationDots = [];
     
     anns.forEach((ann, idx) => {
         const hotspot = document.createElement('button');
@@ -1115,13 +1059,11 @@ function renderAnnotations(anns) {
         });
         
         viewer.appendChild(hotspot);
-        annotationDots.push({ element: hotspot, data: ann });
     });
 }
 
 function clearAnnotations() {
     viewer.querySelectorAll('.ann-hotspot').forEach(el => el.remove());
-    annotationDots = [];
     selectedDotIdx = -1;
 }
 
@@ -1335,7 +1277,7 @@ $('btn-settings').addEventListener('click', () => {
     backdrop.classList.toggle('on', settingsPnl.classList.contains('open'));
 });
 $('close-settings').addEventListener('click', () => {
-    settingsPnl.classList.remove('open');
+    settingsPnl.classList.remove('out');
     backdrop.classList.remove('on');
 });
 backdrop.addEventListener('click', closeSidebar);
@@ -1361,11 +1303,9 @@ $('tog-ann').addEventListener('change', function() {
 
 /* ═══════════════════════════════════════════════════════════
    🎵 BACKGROUND MUSIC CONTROLS
-   ═══════════════════════════════════════════════════════════
-*/
+═══════════════════════════════════════════════════════════ */
 $('tog-music').addEventListener('change', function() {
     if (this.checked) {
-        // ถ้ายังไม่มี src ให้โหลดเพลง ambient ก่อน
         if (!bgAudio.src || bgAudio.src === location.href) {
             setTrack(currentTrack);
         }
@@ -1377,19 +1317,16 @@ $('tog-music').addEventListener('change', function() {
     }
 });
 
-// ปรับระดับเสียงเพลงพื้นหลัง
 $('vol-slider').addEventListener('input', function() {
     bgAudio.volume = this.value / 100;
     $('vol-label').textContent = this.value + '%';
 });
 
-// ปรับระดับเสียงอวัยวะ
 $('organ-vol-slider').addEventListener('input', function() {
     organAudio.volume = this.value / 100;
     $('organ-vol-label').textContent = this.value + '%';
 });
 
-// เปลี่ยนเพลงพื้นหลัง
 document.querySelectorAll('.m-opt').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.m-opt').forEach(b => b.classList.remove('active'));
@@ -1398,11 +1335,10 @@ document.querySelectorAll('.m-opt').forEach(btn => {
     });
 });
 
-// ⚠️ ฟังก์ชันโหลดเพลงตามโหมดที่เลือก
 function setTrack(id) {
     currentTrack = id;
     const wasPlaying = !bgAudio.paused;
-    bgAudio.src = MUSIC[id]; // 🎵 ดึง URL จาก MUSIC object
+    bgAudio.src = MUSIC[id];
     if (wasPlaying) {
         bgAudio.play().catch(err => {
             console.warn('ไม่สามารถเล่นเพลงได้:', err);
